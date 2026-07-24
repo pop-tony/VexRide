@@ -1,0 +1,174 @@
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ImageBackground, ActivityIndicator } from 'react-native';
+import { postJson } from '../services/api';
+import { saveUser } from '../services/user';
+
+const heroImage = { uri: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1400&q=80' };
+
+export default function AuthScreen({ navigation }) {
+  const [mode, setMode] = useState('signup');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  async function handleSubmit() {
+    try {
+      setLoading(true);
+      setMessage('');
+      const endpoint = mode === 'signup' ? '/auth/signup' : '/auth/login';
+      const body = mode === 'signup' ? { name, email, phone, password } : { email, password };
+      // Client-side validation for signup
+      if (mode === 'signup') {
+        if (!password || password.length < 6) {
+          throw new Error('Password must be at least 6 characters');
+        }
+        if (password !== confirmPassword) {
+          throw new Error('Passwords do not match');
+        }
+      }
+
+      const result = await postJson(endpoint, body);
+      console.log(result.user);
+      await saveUser(result.user);
+      navigation.replace('Home');
+    } catch (error) {
+      setMessage(error.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <ImageBackground source={heroImage} style={styles.background} imageStyle={styles.backgroundImage}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={[styles.backButton, !navigation.canGoBack() && styles.backButtonDisabled]}
+            onPress={() => navigation.canGoBack() && navigation.goBack()}
+            disabled={!navigation.canGoBack()}
+          >
+            <Text style={styles.backButtonText}>Previous</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>{mode === 'signup' ? 'Create your account' : 'Welcome back'}</Text>
+          <Text style={styles.subtitle}>Sign up or log in to test real rider accounts.</Text>
+
+          {mode === 'signup' ? (
+            <>
+              <Text style={styles.fieldLabel}>Full Name</Text>
+              <TextInput style={styles.input} placeholder="Your name" placeholderTextColor="#8eb4c6" value={name} onChangeText={setName} />
+              <Text style={styles.fieldLabel}>Phone Number</Text>
+              <TextInput style={styles.input} placeholder="Phone number" placeholderTextColor="#8eb4c6" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+              <View>
+                <Text style={styles.fieldLabel}>Password</Text>
+                <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#8eb4c6" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} />
+                <TouchableOpacity style={styles.showToggle} onPress={() => setShowPassword((s) => !s)}>
+                  <Text style={styles.showText}>{showPassword ? 'Hide' : 'Show'}</Text>
+                </TouchableOpacity>
+              </View>
+              <View>
+                <Text style={styles.fieldLabel}>Confirm Password</Text>
+                <TextInput style={styles.input} placeholder="Confirm password" placeholderTextColor="#8eb4c6" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={!showConfirmPassword} />
+                <TouchableOpacity style={styles.showToggle} onPress={() => setShowConfirmPassword((s) => !s)}>
+                  <Text style={styles.showText}>{showConfirmPassword ? 'Hide' : 'Show'}</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.passwordHint}>{passwordStrength(password)}</Text>
+            </>
+          ) : null}
+
+          <Text style={styles.fieldLabel}>Email Address</Text>
+          <TextInput style={styles.input} placeholder="Email address" placeholderTextColor="#8eb4c6" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+          {mode === 'login' ? (
+            <View>
+              <Text style={styles.fieldLabel}>Password</Text>
+              <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#8eb4c6" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} />
+              <TouchableOpacity style={styles.showToggle} onPress={() => setShowPassword((s) => !s)}>
+                <Text style={styles.showText}>{showPassword ? 'Hide' : 'Show'}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          {message ? <Text style={styles.message}>{message}</Text> : null}
+
+          <TouchableOpacity
+            style={[styles.primaryButton, (loading || !canSubmit(mode, name, email, password, confirmPassword)) && styles.disabledButton]}
+            onPress={handleSubmit}
+            disabled={loading || !canSubmit(mode, name, email, password, confirmPassword)}
+          >
+            {loading ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>{mode === 'signup' ? 'Sign up' : 'Log in'}</Text>}
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.linkButton} onPress={() => setMode(mode === 'signup' ? 'login' : 'signup')}>
+            <Text style={styles.linkText}>{mode === 'signup' ? 'Already have an account? Log in' : 'Need an account? Sign up'}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </ImageBackground>
+  );
+}
+
+function passwordStrength(pw) {
+  if (!pw) return '';
+  let score = 0;
+  if (pw.length >= 6) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (score <= 1) return 'Weak password';
+  if (score === 2) return 'Okay password';
+  return 'Strong password';
+}
+
+function canSubmit(mode, name, email, password, confirm) {
+  if (mode === 'login') return email && password;
+  return name && email && password && confirm && password === confirm && password.length >= 6;
+}
+
+const styles = StyleSheet.create({
+  background: { flex: 1, backgroundColor: '#061426' },
+  backgroundImage: { opacity: 0.82 },
+  container: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  card: { backgroundColor: 'rgba(6,24,44,0.95)', borderRadius: 28, padding: 24, borderWidth: 1, borderColor: 'rgba(33,211,199,0.18)' },
+  backButton: {
+    alignSelf: 'flex-start',
+    minHeight: 40,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    marginBottom: 16
+  },
+  backButtonDisabled: {
+    opacity: 0.4
+  },
+  backButtonText: {
+    color: '#c9e5f4',
+    fontWeight: '800'
+  },
+  title: { fontSize: 30, fontWeight: '900', color: '#21d3c7', marginBottom: 8 },
+  subtitle: { color: '#c9e5f4', marginBottom: 22, lineHeight: 21 },
+  fieldLabel: { color: '#c9e5f4', fontSize: 13, fontWeight: '700', marginBottom: 8, marginTop: 4 },
+  input: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 18, padding: 16, marginBottom: 16, color: 'white', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  message: { color: '#ffd099', marginBottom: 12, fontWeight: '700' },
+  primaryButton: { backgroundColor: '#ff7a1a', padding: 16, borderRadius: 18, marginTop: 8, alignItems: 'center' },
+  buttonText: { color: 'white', fontWeight: '800', fontSize: 16 },
+  linkButton: { marginTop: 14, alignItems: 'center' },
+  linkText: { color: '#6fe7de', fontWeight: '700' }
+});
+
+const stylesExt = StyleSheet.create({
+  showToggle: { position: 'absolute', right: 18, top: 14 },
+  showText: { color: '#6fe7de', fontWeight: '700' },
+  passwordHint: { color: '#c9e5f4', marginTop: 8, fontSize: 12 },
+  disabledButton: { opacity: 0.5 }
+});
+
+Object.assign(styles, stylesExt);
