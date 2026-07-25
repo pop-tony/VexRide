@@ -7,8 +7,6 @@ import { startLiveLocationTracking, stopLiveLocationTracking } from './src/servi
 
 // Tailwind / NativeWind
 import './global.css';
-// Keep web styles if you still need them
-import './web/styles/screens.css';
 
 export default function App() {
   const userIdRef = useRef(null);
