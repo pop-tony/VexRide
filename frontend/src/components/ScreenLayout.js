@@ -1,49 +1,82 @@
 import React from 'react';
-import { View, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Text } from 'react-native';
+import { View, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Text, ImageBackground } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomNav from './BottomNav';
+import { ArrowLeftIcon } from './Icons';
 
-export default function ScreenLayout({ navigation, route, children, refreshControl, showsVerticalScrollIndicator = true, className = "" }) {
-  const canGoBack = navigation?.canGoBack?.()?? false;
+export default function ScreenLayout({ navigation, route, children, refreshControl, showsVerticalScrollIndicator = true, className = "", bgImage, hideBottomNav = false }) {
+  const canGoBack = navigation?.canGoBack?.() ?? false;
 
   return (
-    <SafeAreaView className="flex-1 bg-[#061426]">
+    <SafeAreaView className="flex-1 bg-[#050c1a] relative">
+      {/* Fixed Full Screen Background Image */}
+      {bgImage && (
+        <View
+          className="absolute inset-0 z-0 overflow-hidden"
+          style={Platform.OS === 'web' ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh' } : { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        >
+          <ImageBackground
+            source={bgImage}
+            className="w-full h-full flex-1"
+            resizeMode="cover"
+            imageStyle={{ width: '100%', height: '100%' }}
+          >
+            <View className="absolute inset-0 bg-[#050c1a]/75" />
+          </ImageBackground>
+        </View>
+      )}
+
+      {/* Main Content Layout Overlay */}
       <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios'? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios'? 60 : 0}
+        className="flex-1 relative z-10"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
       >
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 140 }}
+          style={Platform.OS === 'web' ? { flex: 1, minHeight: '100%', overflowY: 'auto' } : { flex: 1 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: hideBottomNav ? 32 : 80 }}
           keyboardShouldPersistTaps="handled"
           refreshControl={refreshControl}
           showsVerticalScrollIndicator={showsVerticalScrollIndicator}
         >
-          {/* RESPONSIVE CONTAINER: full on phone, max 1024px centered on tablet/web */}
-          <View className={`w-full self-center max-w- px-6 md:px-8 py-2 ${className}`}>
-            {/* Universal Back Button - auto-hides on Home/Auth */}
-            <View className="pt-2 pb-4 items-start">
-              <TouchableOpacity
-                className={`min-h- px-4 rounded-full justify-center border flex-row items-center ${
-                 !canGoBack? 'opacity-40 bg-white/5 border-white/10' : 'bg-white/10 border-white/15 active:bg-white/20'
-                }`}
-                onPress={() => canGoBack && navigation.goBack()}
-                disabled={!canGoBack}
-              >
-                <Text className="text-[#c9e5f4] font-extrabold text-">← Previous</Text>
-              </TouchableOpacity>
+          {/* RESPONSIVE CONTAINER */}
+          <View className={`w-full self-center max-w-3xl px-4 md:px-6 py-2 ${className}`}>
+            {/* Header Navigation Bar */}
+            <View className="pt-2 pb-4 flex-row justify-between items-center">
+              {canGoBack ? (
+                <TouchableOpacity
+                  className="px-4 py-2 rounded-full bg-black/40 border border-white/20 active:bg-white/20 flex-row items-center gap-2 shadow-lg backdrop-blur-md"
+                  onPress={() => navigation.goBack()}
+                >
+                  <ArrowLeftIcon size={16} color="#00f2fe" />
+                  <Text className="text-[#d8f4ff] font-extrabold text-xs tracking-wider uppercase">Back</Text>
+                </TouchableOpacity>
+              ) : (
+                <View className="flex-row items-center gap-2.5 bg-black/40 px-3 py-1.5 rounded-full border border-white/10 backdrop-blur-md">
+                  <View className="w-8 h-8 rounded-xl bg-[#00f2fe]/20 border border-[#00f2fe]/40 items-center justify-center shadow-md">
+                    <Text className="text-[#00f2fe] font-black text-sm">V</Text>
+                  </View>
+                  <Text className="text-white font-black text-lg tracking-wider">VEX<Text className="text-[#00f2fe]">RIDE</Text></Text>
+                </View>
+              )}
+
+              {/* Live Status Badge */}
+              <View className="flex-row items-center bg-black/40 border border-[#00f2fe]/40 px-3 py-1.5 rounded-full gap-1.5 backdrop-blur-md shadow-md">
+                <View className="w-2 h-2 rounded-full bg-[#00f2fe]" />
+                <Text className="text-[#00f2fe] font-extrabold text-[10px] uppercase tracking-widest">Live System</Text>
+              </View>
             </View>
 
-            {/* Your screen content */}
+            {/* Screen Content */}
             <View className="flex-1 w-full">
               {children}
             </View>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
 
-      <BottomNav navigation={navigation} activeRoute={route?.name} />
+        {!hideBottomNav && navigation && <BottomNav navigation={navigation} activeRoute={route?.name} />}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

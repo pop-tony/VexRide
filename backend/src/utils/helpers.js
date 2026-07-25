@@ -58,7 +58,18 @@ function parseRideTime(value) {
 
 async function ensureUser(userName, userEmail) {
   if (!dbReady) {
-    throw new Error('Database not available — cannot create or find users');
+    const store = getMemoryStore();
+    let user = store.users.find(u => u.email === userEmail);
+    if (!user) {
+      user = {
+        id: store.users.length + 1,
+        name: userName || 'Guest',
+        email: userEmail || `user-${Date.now()}@example.com`,
+        rating: 5.0
+      };
+      store.users.push(user);
+    }
+    return user;
   }
 
   let user = await User.findOne({ where: { email: userEmail } });
@@ -73,18 +84,27 @@ async function ensureUser(userName, userEmail) {
 }
 
 async function findUserByEmail(userEmail) {
-  if (!dbReady) return null;
+  if (!dbReady) {
+    const store = getMemoryStore();
+    return store.users.find(u => String(u.email).toLowerCase() === String(userEmail).toLowerCase()) || null;
+  }
   return User.findOne({ where: { email: userEmail } });
 }
 
 async function findUserByPhone(phone) {
   if (!phone) return null;
-  if (!dbReady) return null;
+  if (!dbReady) {
+    const store = getMemoryStore();
+    return store.users.find(u => String(u.phone) === String(phone)) || null;
+  }
   return User.findOne({ where: { phone } });
 }
 
 async function findUserById(userId) {
-  if (!dbReady) return null;
+  if (!dbReady) {
+    const store = getMemoryStore();
+    return store.users.find(u => Number(u.id) === Number(userId)) || null;
+  }
   return User.findByPk(userId);
 }
 

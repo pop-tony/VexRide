@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ImageBackground, RefreshControl, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { getJson, postJson } from '../services/api';
 import { getStoredUser } from '../services/user';
 import { onSocket } from '../services/socket';
 import ScreenLayout from '../components/ScreenLayout';
 import LiveLocationMap from '../components/LiveLocationMap';
+import { TrackingIcon, CheckIcon, AlertIcon, CarIcon, ZapIcon } from '../components/Icons';
 
-const heroImage = { uri: 'https://images.unsplash.com/photo-1519914213166-db6e2b9b0b6b?auto=format&fit=crop&w=1400&q=80' };
+const heroImage = require('../../assets/images/vex_map_bg_1784946439656.jpg');
 
 export default function RideTrackingScreen({ navigation, route }) {
   const [activeRides, setActiveRides] = useState([]);
@@ -14,7 +15,7 @@ export default function RideTrackingScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => { (async()=>{ const user = await getStoredUser(); setCurrentUser(user); if (user) await loadRides(user.id); })() }, []);
+  useEffect(() => { (async () => { const user = await getStoredUser(); setCurrentUser(user); if (user) await loadRides(user.id); })() }, []);
   useEffect(() => {
     if (!currentUser) return;
     const c1 = onSocket('rideConfirmed', ({ matchId }) => loadRides(currentUser.id));
@@ -27,93 +28,154 @@ export default function RideTrackingScreen({ navigation, route }) {
     try { const data = await getJson(`/activeRides/${userId}`); setActiveRides(data.rides || []); }
     catch (e) { console.error(e); } finally { setLoading(false); setRefreshing(false); }
   }
+
   async function handleConfirmRide(ride) {
     if (!currentUser) return Alert.alert('Error', 'User not found');
     if ((ride.user1_id === currentUser.id && ride.user1_confirmed) || (ride.user2_id === currentUser.id && ride.user2_confirmed)) return Alert.alert('Already Confirmed', 'You have already confirmed this ride');
     try { await postJson('/confirmMatch', { matchId: ride.id, userId: currentUser.id }); Alert.alert('Success', 'Ride confirmation recorded!'); await loadRides(currentUser.id); }
     catch (error) { Alert.alert('Error', error.message); }
   }
+
   async function onRefresh() { setRefreshing(true); if (currentUser) await loadRides(currentUser.id); }
 
   if (loading) return (
-    <ScreenLayout navigation={navigation} route={route}>
-      <View className="flex-1 justify-center items-center p-6"><Text className="text-[#c9e5f4] text-base text-center">Loading active rides...</Text></View>
+    <ScreenLayout navigation={navigation} route={route} bgImage={heroImage}>
+      <View className="flex-1 justify-center items-center p-8 bg-[#0b172a]/95 rounded-3xl border border-[#00f2fe]/30 backdrop-blur-xl">
+        <View className="w-12 h-12 rounded-2xl bg-[#00f2fe]/20 border border-[#00f2fe]/50 items-center justify-center mb-3">
+          <TrackingIcon size={24} color="#00f2fe" />
+        </View>
+        <Text className="text-[#00f2fe] font-extrabold text-base text-center">Loading Active Rides...</Text>
+      </View>
     </ScreenLayout>
   );
 
   return (
-    <ScreenLayout navigation={navigation} route={route} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} contentContainerStyle={{ flexGrow: 1 }}>
-      <ImageBackground source={heroImage} className="flex-1">
-        <View className="absolute inset-0 bg-[#04142c]/60" />
-        <ScrollView contentContainerStyle={{ padding: 24 }} className="flex-1" showsVerticalScrollIndicator={false}>
-          <Text className="text-[#21d3c7] text- font-black mb-5">Active Rides</Text>
+    <ScreenLayout navigation={navigation} route={route} bgImage={heroImage} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00f2fe" />}>
+      <View className="w-full max-w-lg self-center">
 
-          {activeRides[0]?.liveLocationState? (
-            <View className="rounded- overflow-hidden mb-4 border border-[#21d3c7]/20">
-              <LiveLocationMap liveLocationState={activeRides[0].liveLocationState} title="Live ride map" height={260} />
+        {/* Header */}
+        <View className="flex-row items-center gap-3 mb-4">
+          <View className="w-10 h-10 rounded-2xl bg-[#00f2fe]/20 border border-[#00f2fe]/40 items-center justify-center flex-shrink-0">
+            <TrackingIcon size={20} color="#00f2fe" />
+          </View>
+          <View className="flex-1 min-w-0">
+            <Text className="text-xl font-black text-white">Live Tracking</Text>
+            <Text className="text-[#8eb4c6] text-xs">Monitor confirmed trips and GPS locations</Text>
+          </View>
+        </View>
+
+        {/* Live Map Card */}
+        {activeRides[0]?.liveLocationState ? (
+          <View className="rounded-3xl overflow-hidden mb-5 border border-[#00f2fe]/30 shadow-2xl bg-[#0b172a]">
+            <LiveLocationMap liveLocationState={activeRides[0].liveLocationState} title="Live ride map" height={260} />
+          </View>
+        ) : (
+          <View className="bg-[#0b172a]/95 rounded-3xl p-5 border border-[#00f2fe]/20 shadow-xl mb-5 flex-row items-center gap-3">
+            <ZapIcon size={20} color="#00f2fe" />
+            <View className="flex-1 min-w-0">
+              <Text className="text-white font-extrabold text-sm mb-0.5">Live GPS Stream</Text>
+              <Text className="text-[#8eb4c6] text-xs leading-4">Waiting for GPS data from matched riders.</Text>
             </View>
-          ) : (
-            <View className="bg-white/10 rounded- p-4 border border-[#21d3c7]/20 mb-4">
-              <Text className="text-[#d4f3fb] font-extrabold mb-1">Live map</Text>
-              <Text className="text-[#c9e5f4] leading-5">Waiting for GPS data from the matched riders.</Text>
+          </View>
+        )}
+
+        {/* Active Rides List */}
+        {activeRides.length === 0 ? (
+          <View className="bg-[#0b172a]/95 rounded-3xl p-8 border border-white/[0.08] items-center my-4">
+            <View className="w-12 h-12 rounded-2xl bg-white/[0.05] border border-white/[0.1] items-center justify-center mb-3">
+              <CarIcon size={24} color="#8eb4c6" />
             </View>
-          )}
+            <Text className="text-white text-base font-extrabold mb-1">No Active Confirmed Rides</Text>
+            <Text className="text-[#8eb4c6] text-xs text-center">Match a ride from the search screen to track it live here.</Text>
+          </View>
+        ) : (
+          activeRides.map((ride) => {
+            const isUser1 = ride.user1_id === currentUser?.id;
+            const userConfirmed = ride.status === 'confirmed' || (isUser1 ? ride.user1_confirmed : ride.user2_confirmed);
+            const userPaymentStatus = isUser1 ? ride.user1_payment_status : ride.user2_payment_status;
+            const otherPaymentStatus = isUser1 ? ride.user2_payment_status : ride.user1_payment_status;
 
-          {activeRides.length === 0? (
-            <View className="items-center mt-14">
-              <Text className="text-[#c9e5f4] text-lg font-semibold mb-2">No active confirmed rides</Text>
-              <Text className="text-[#8eb4c6] text-sm">Find and match a ride to see it here</Text>
-            </View>
-          ) : (
-            activeRides.map((ride) => {
-              const isUser1 = ride.user1_id === currentUser?.id;
-              const userConfirmed = ride.status === 'confirmed' || (isUser1? ride.user1_confirmed : ride.user2_confirmed);
-              const userPaymentStatus = isUser1? ride.user1_payment_status : ride.user2_payment_status;
-              const otherPaymentStatus = isUser1? ride.user2_payment_status : ride.user1_payment_status;
-              return (
-                <View key={ride.id} className="bg-[#0a2f47]/90 rounded- p-4 mb-4 border border-[#21d3c7]/20">
-                  <View className="flex-row justify-between items-center mb-3">
-                    <Text className="text-[#21d3c7] text-base font-extrabold">Ride #{ride.id}</Text>
-                    <View className={`px-3 py-1.5 rounded-xl ${ride.status === 'confirmed'? 'bg-[#21d3c7]' : 'bg-[#ff7a1a]'}`}>
-                      <Text className="text-white font-bold text-xs">{ride.status.toUpperCase()}</Text>
-                    </View>
+            return (
+              <View key={ride.id} className="bg-[#0b172a]/95 rounded-3xl p-5 mb-4 border border-[#00f2fe]/25 shadow-xl">
+
+                {/* Card Header */}
+                <View className="flex-row justify-between items-center mb-3 pb-3 border-b border-white/[0.08]">
+                  <Text className="text-white text-base font-black">Ride #{ride.id}</Text>
+                  <View className={`px-3 py-1 rounded-full ${ride.status === 'confirmed' ? 'bg-[#00f2fe]' : 'bg-[#ff5e36]'}`}>
+                    <Text className={`font-black text-[10px] uppercase ${ride.status === 'confirmed' ? 'text-[#050c1a]' : 'text-white'}`}>
+                      {ride.status}
+                    </Text>
                   </View>
-
-                  <View className="bg-white/5 rounded-xl p-3 mb-3">
-                    <View className="flex-row justify-between mb-2"><Text className="text-[#8eb4c6] text- font-semibold">From</Text><Text className="text-[#e8f9ff] text- font-semibold">{ride.pickup_location || 'Downtown'}</Text></View>
-                    <View className="flex-row justify-between mb-2"><Text className="text-[#8eb4c6] text- font-semibold">To</Text><Text className="text-[#e8f9ff] text- font-semibold">{ride.dropoff_location || 'Airport'}</Text></View>
-                    <View className="flex-row justify-between"><Text className="text-[#8eb4c6] text- font-semibold">Time</Text><Text className="text-[#e8f9ff] text- font-semibold">{ride.ride_time? new Date(ride.ride_time).toLocaleTimeString() : 'TBD'}</Text></View>
-                  </View>
-
-                  <View className="mb-3">
-                    <Text className="text-[#c9e5f4] text- font-bold mb-2">Payment Status</Text>
-                    <Text className="text-[#a8d6e8] text-xs mb-1">Your Payment: <Text className={userPaymentStatus === 'success'? 'text-[#21d3c7] font-bold' : 'text-[#ff7a1a] font-bold'}>{userPaymentStatus}</Text></Text>
-                    <Text className="text-[#a8d6e8] text-xs">Other Party: <Text className={otherPaymentStatus === 'success'? 'text-[#21d3c7] font-bold' : 'text-[#ff7a1a] font-bold'}>{otherPaymentStatus}</Text></Text>
-                  </View>
-
-                  <View className="mb-3 flex-row">
-                    <View className={`px-3 py-2 rounded-xl border ${userConfirmed? 'bg-[#21d3c7]/20 border-[#21d3c7]/40' : 'bg-[#ff7a1a]/20 border-[#ff7a1a]/40'}`}>
-                      <Text className="font-bold text-xs text-[#ff7a1a]">{userConfirmed? '✓ Confirmed' : 'Pending'}</Text>
-                    </View>
-                  </View>
-
-                  {!userConfirmed && ride.status!== 'confirmed' && userPaymentStatus === 'success' && otherPaymentStatus === 'success' && (
-                    <TouchableOpacity className="bg-[#21d3c7] py-3 rounded-xl items-center mt-3" onPress={() => handleConfirmRide(ride)}>
-                      <Text className="text-[#061426] font-extrabold text-sm">Confirm Ride</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {userPaymentStatus!== 'success' && (
-                    <View className="bg-[#ff7a1a]/15 rounded-xl p-3 mt-3 border border-[#ff7a1a]/30">
-                      <Text className="text-[#ff7a1a] text-xs font-semibold">⚠ Both parties must complete payment to confirm</Text>
-                    </View>
-                  )}
                 </View>
-              );
-            })
-          )}
-        </ScrollView>
-      </ImageBackground>
+
+                {/* Route Info Box */}
+                <View className="bg-white/[0.03] rounded-2xl p-3.5 mb-3 border border-white/[0.08]">
+                  <View className="flex-row justify-between items-center mb-2">
+                    <Text className="text-[#8eb4c6] text-xs font-bold">Pick-up:</Text>
+                    <Text className="text-white font-extrabold text-xs">{ride.pickup_location || 'Downtown'}</Text>
+                  </View>
+                  <View className="flex-row justify-between items-center mb-2">
+                    <Text className="text-[#8eb4c6] text-xs font-bold">Drop-off:</Text>
+                    <Text className="text-white font-extrabold text-xs">{ride.dropoff_location || 'Airport'}</Text>
+                  </View>
+                  <View className="flex-row justify-between items-center">
+                    <Text className="text-[#8eb4c6] text-xs font-bold">Time:</Text>
+                    <Text className="text-[#00f2fe] font-extrabold text-xs">{ride.ride_time ? new Date(ride.ride_time).toLocaleTimeString() : 'TBD'}</Text>
+                  </View>
+                </View>
+
+                {/* Payment Status Badges */}
+                <View className="bg-[#050e1d] rounded-2xl p-3 mb-3 border border-white/[0.06]">
+                  <Text className="text-[#8eb4c6] text-[10px] uppercase font-bold mb-1.5">Payment Clearance</Text>
+                  <View className="flex-row justify-between items-center mb-1">
+                    <Text className="text-[#c9e5f4] text-xs">Your Status:</Text>
+                    <Text className={`text-xs font-extrabold ${userPaymentStatus === 'success' ? 'text-[#00f2fe]' : 'text-[#ff5e36]'}`}>
+                      {userPaymentStatus === 'success' ? '✓ Paid' : 'Pending'}
+                    </Text>
+                  </View>
+                  <View className="flex-row justify-between items-center">
+                    <Text className="text-[#c9e5f4] text-xs">Partner Status:</Text>
+                    <Text className={`text-xs font-extrabold ${otherPaymentStatus === 'success' ? 'text-[#00f2fe]' : 'text-[#ff5e36]'}`}>
+                      {otherPaymentStatus === 'success' ? '✓ Paid' : 'Pending'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* User Confirmation Status */}
+                <View className="flex-row items-center mb-3">
+                  <View className={`px-3 py-1 rounded-full flex-row items-center gap-1.5 ${userConfirmed ? 'bg-[#00f2fe]/20 border border-[#00f2fe]/40' : 'bg-[#ff5e36]/20 border border-[#ff5e36]/40'}`}>
+                    <CheckIcon size={12} color={userConfirmed ? '#00f2fe' : '#ff5e36'} />
+                    <Text className={`text-[10px] font-extrabold ${userConfirmed ? 'text-[#00f2fe]' : 'text-[#ff5e36]'}`}>
+                      {userConfirmed ? 'Confirmed by You' : 'Confirmation Pending'}
+                    </Text>
+                  </View>
+                </View>
+
+                {!userConfirmed && ride.status !== 'confirmed' && userPaymentStatus === 'success' && otherPaymentStatus === 'success' && (
+                  <TouchableOpacity
+                    className="bg-[#00f2fe] border border-[#00f2fe]/60 py-3 rounded-2xl items-center shadow-lg active:scale-98 mt-2 flex-row justify-center gap-2"
+                    onPress={() => handleConfirmRide(ride)}
+                  >
+                    <CheckIcon size={16} color="#050c1a" />
+                    <Text className="text-[#050c1a] font-black text-xs">Confirm Ride Now</Text>
+                  </TouchableOpacity>
+                )}
+
+                {userPaymentStatus !== 'success' && (
+                  <View className="bg-[#ff5e36]/15 border border-[#ff5e36]/30 rounded-2xl p-3 mt-2 flex-row items-center gap-2">
+                    <AlertIcon size={14} color="#ff7a5c" />
+                    <Text className="text-[#ff7a5c] text-[11px] font-bold flex-1 leading-4">
+                      Both parties must complete Paystack payment to enable ride confirmation
+                    </Text>
+                  </View>
+                )}
+
+              </View>
+            );
+          })
+        )}
+
+      </View>
     </ScreenLayout>
   );
 }

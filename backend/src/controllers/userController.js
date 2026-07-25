@@ -1,13 +1,10 @@
-const { ensureUser, findUserByEmail, findUserById, findUserByPhone, getDbReady } = require('../utils/helpers');
+const { ensureUser, findUserByEmail, findUserById, findUserByPhone, getDbReady, getMemoryStore } = require('../utils/helpers');
 const { User } = require('../models');
 
 const userController = {
   async getOrCreateUser(req, res) {
     try {
       const { userName, userEmail } = req.body;
-      if (!getDbReady()) {
-        return res.status(503).json({ success: false, message: 'Database unavailable' });
-      }
       const user = await ensureUser(userName, userEmail);
       res.json({ success: true, user });
     } catch (error) {
@@ -32,10 +29,6 @@ const userController = {
         return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
       }
 
-      if (!getDbReady()) {
-        return res.status(503).json({ success: false, message: 'Database unavailable; signup is disabled' });
-      }
-
       if (phone) {
         const phoneNormalized = String(phone).trim();
         const existingByPhone = await findUserByPhone(phoneNormalized);
@@ -51,6 +44,22 @@ const userController = {
 
       const bcrypt = require('bcryptjs');
       const password_hash = await bcrypt.hash(password, 8);
+
+      if (!getDbReady()) {
+        const store = getMemoryStore();
+        const newUser = {
+          id: store.users.length + 1,
+          name,
+          email,
+          phone: phone || null,
+          password_hash,
+          rating: 5.0
+        };
+        store.users.push(newUser);
+        const safeUser = { ...newUser };
+        delete safeUser.password_hash;
+        return res.json({ success: true, user: safeUser, message: 'Account created' });
+      }
 
       const user = await User.create({ name, email, phone: phone || null, password_hash, rating: 5.0 });
       const safeUser = { ...user.toJSON() };
@@ -72,10 +81,6 @@ const userController = {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         return res.status(400).json({ success: false, message: 'Invalid email address' });
-      }
-
-      if (!getDbReady()) {
-        return res.status(503).json({ success: false, message: 'Database unavailable; login is disabled' });
       }
 
       const user = await findUserByEmail(email);
