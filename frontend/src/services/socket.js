@@ -7,6 +7,14 @@ export function joinUser(userId) {
   socket.emit('joinUser', userId);
 }
 
+export function joinChatRoom(matchId) {
+  socket.emit('joinChat', { matchId });
+}
+
+export function sendChatMessage(payload) {
+  socket.emit('sendChatMessage', payload);
+}
+
 export function onSocket(event, handler) {
   socket.on(event, handler);
   return () => socket.off(event, handler);

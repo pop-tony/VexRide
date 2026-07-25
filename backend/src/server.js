@@ -4,7 +4,7 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const sequelize = require('./config/database');
-const { User, RideRequest, Match, Payment, Group, GroupMember } = require('./models');
+const { User, RideRequest, Match, ChatMessage, Payment, Group, GroupMember } = require('./models');
 const { setDbReady, setMemoryStore, getMemoryStore, getDbReady } = require('./utils/helpers');
 
 // Controllers
@@ -30,8 +30,76 @@ setGroupIO(io);
 // Socket.io connection handler
 io.on('connection', (socket) => {
   socket.on('joinUser', (userId) => {
+    socket.data.userId = Number(userId);
     socket.join(`user:${userId}`);
   });
+
+  socket.on('joinChat', ({ matchId }) => {
+    if (!matchId) return;
+    socket.join(`chat:${matchId}`);
+  });
+
+  socket.on('sendChatMessage', ({ matchId, message }) => {
+    const trimmedMessage = typeof message === 'string' ? message.trim() : '';
+    if (!matchId || !trimmedMessage) return;
+
+    const timestamp = new Date().toISOString();
+    const payload = {
+      matchId: Number(matchId),
+      userId: socket.data.userId || null,
+      message: trimmedMessage,
+      timestamp
+    };
+
+    const dbReady = getDbReady();
+    if (dbReady) {
+      ChatMessage.create({
+        match_id: Number(matchId),
+        user_id: payload.userId,
+        message: trimmedMessage
+      }).catch((error) => console.warn('Failed to persist chat message:', error.message));
+    } else {
+      const memoryStore = getMemoryStore();
+      memoryStore.chatMessages.push({
+        id: memoryStore.chatMessages.length + 1,
+        match_id: Number(matchId),
+        user_id: payload.userId,
+        message: trimmedMessage,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      });
+    }
+
+    io.to(`chat:${matchId}`).emit('chatMessage', payload);
+  });
+});
+
+app.get('/match/:matchId/chat', async (req, res) => {
+  try {
+    const matchId = Number(req.params.matchId);
+    if (!matchId) {
+      return res.status(400).json({ success: false, message: 'matchId is required' });
+    }
+
+    const dbReady = getDbReady();
+    const memoryStore = getMemoryStore();
+
+    const messages = dbReady
+      ? await ChatMessage.findAll({ where: { match_id: matchId }, order: [['createdAt', 'ASC']] })
+      : memoryStore.chatMessages.filter((message) => Number(message.match_id) === matchId).sort((first, second) => new Date(first.createdAt) - new Date(second.createdAt));
+
+    res.json({
+      success: true,
+      messages: messages.map((message) => ({
+        matchId: message.match_id,
+        userId: message.user_id,
+        message: message.message,
+        timestamp: message.createdAt || message.createdAt
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 // Health check
@@ -76,11 +144,12 @@ app.post('/reset-app-data', async (_req, res) => {
     const memoryStore = getMemoryStore();
 
     if (dbReady) {
-      await sequelize.query('TRUNCATE TABLE payments, matches, ride_requests, group_members, groups, users RESTART IDENTITY CASCADE;');
+      await sequelize.query('TRUNCATE TABLE chat_messages, payments, matches, ride_requests, group_members, groups, users RESTART IDENTITY CASCADE;');
     } else {
       memoryStore.users = [];
       memoryStore.rideRequests = [];
       memoryStore.matches = [];
+      memoryStore.chatMessages = [];
       memoryStore.payments = [];
       memoryStore.groups = [];
       memoryStore.groupMembers = [];
@@ -118,6 +187,7 @@ async function init() {
       users: [],
       rideRequests: [],
       matches: [],
+      chatMessages: [],
       payments: [],
       groups: [],
       groupMembers: []

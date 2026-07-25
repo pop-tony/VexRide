@@ -13,10 +13,14 @@ export default function MatchResultScreen({ navigation, route }) {
   const [currentMatch, setCurrentMatch] = useState(match);
   const [status, setStatus] = useState(match ? 'Match ready' : 'Searching for a rider nearby...');
   const [activeRequest, setActiveRequest] = useState(request);
+  const [counterParty, setCounterParty] = useState(match?.counterParty || null);
 
   useEffect(() => {
-    const cleanup = onSocket('matchFound', ({ matchId, request, liveLocationState }) => {
-      setCurrentMatch({ id: matchId, liveLocationState }); setActiveRequest(request); setStatus('Live match found!');
+    const cleanup = onSocket('matchFound', ({ matchId, request, counterParty, liveLocationState }) => {
+      setCurrentMatch({ id: matchId, liveLocationState });
+      setActiveRequest(request);
+      setCounterParty(counterParty || null);
+      setStatus('Live match found!');
     });
     return cleanup;
   }, []);
@@ -89,7 +93,20 @@ export default function MatchResultScreen({ navigation, route }) {
           {liveLocationState?.pickupSummary ? (
             <Text className="text-[#ccebf5] text-xs text-center mt-1 leading-4">{liveLocationState.pickupSummary}</Text>
           ) : null}
+          {counterParty ? (
+            <Text className="text-[#ccebf5] text-xs text-center mt-1 leading-4">
+              Matched with {counterParty.name || 'another rider'}
+            </Text>
+          ) : null}
         </View>
+
+        <TouchableOpacity
+          className={`border border-[#00f2fe]/50 bg-[#00f2fe]/10 py-3.5 rounded-2xl items-center flex-row justify-center gap-2 shadow-md mb-3 ${currentMatch?.id ? 'active:bg-[#00f2fe]/20' : 'opacity-50'}`}
+          onPress={() => navigation.navigate('Chat', { matchId: currentMatch?.id, request: activeRequest, counterParty })}
+          disabled={!currentMatch?.id}
+        >
+          <Text className="text-[#00f2fe] font-extrabold text-sm">Open Chat</Text>
+        </TouchableOpacity>
 
         {/* Action Buttons */}
         <TouchableOpacity

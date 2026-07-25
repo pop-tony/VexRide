@@ -4,6 +4,7 @@ let memoryStore = {
   users: [],
   rideRequests: [],
   matches: [],
+  chatMessages: [],
   payments: [],
   groups: [],
   groupMembers: []

@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import HomeScreen from '../screens/HomeScreen';
 import FindRideScreen from '../screens/FindRideScreen';
 import MatchResultScreen from '../screens/MatchResultScreen';
+import ChatScreen from '../screens/ChatScreen';
 import PaymentScreen from '../screens/PaymentScreen';
 import RideDetailsScreen from '../screens/RideDetailsScreen';
 import CreateGroupScreen from '../screens/CreateGroupScreen';
@@ -43,6 +44,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="FindRide" component={FindRideScreen} />
         <Stack.Screen name="MatchResult" component={MatchResultScreen} />
+        <Stack.Screen name="Chat" component={ChatScreen} />
         <Stack.Screen name="Payment" component={PaymentScreen} />
         <Stack.Screen name="RideDetails" component={RideDetailsScreen} />
         <Stack.Screen name="CreateGroup" component={CreateGroupScreen} />

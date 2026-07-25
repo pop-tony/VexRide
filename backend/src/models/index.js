@@ -2,6 +2,7 @@ const sequelize = require('../config/database');
 const User = require('./User');
 const RideRequest = require('./RideRequest');
 const Match = require('./Match');
+const ChatMessage = require('./ChatMessage');
 const Payment = require('./Payment');
 const Group = require('./Group');
 const GroupMember = require('./GroupMember');
@@ -13,6 +14,11 @@ RideRequest.hasMany(Match, { foreignKey: 'ride1_id' });
 RideRequest.hasMany(Match, { foreignKey: 'ride2_id' });
 Match.belongsTo(RideRequest, { foreignKey: 'ride1_id', as: 'rideOne' });
 Match.belongsTo(RideRequest, { foreignKey: 'ride2_id', as: 'rideTwo' });
+
+Match.hasMany(ChatMessage, { foreignKey: 'match_id' });
+ChatMessage.belongsTo(Match, { foreignKey: 'match_id' });
+User.hasMany(ChatMessage, { foreignKey: 'user_id' });
+ChatMessage.belongsTo(User, { foreignKey: 'user_id' });
 
 Match.hasMany(Payment, { foreignKey: 'match_id' });
 Payment.belongsTo(Match, { foreignKey: 'match_id' });
@@ -29,6 +35,7 @@ module.exports = {
   User,
   RideRequest,
   Match,
+  ChatMessage,
   Payment,
   Group,
   GroupMember

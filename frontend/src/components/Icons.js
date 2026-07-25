@@ -180,3 +180,11 @@ export const AlertIcon = (props) => (
     <line x1="12" y1="17" x2="12.01" y2="17" />
   </SvgIcon>
 );
+
+export const ChatIcon = (props) => (
+  <SvgIcon {...props}>
+    <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    <path d="M8 8h8" />
+    <path d="M8 12h5" />
+  </SvgIcon>
+);

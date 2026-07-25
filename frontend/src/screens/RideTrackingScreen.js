@@ -38,6 +38,14 @@ export default function RideTrackingScreen({ navigation, route }) {
 
   async function onRefresh() { setRefreshing(true); if (currentUser) await loadRides(currentUser.id); }
 
+  function openRideDetails(ride) {
+    navigation.navigate('RideDetails', {
+      ride,
+      matchId: ride.id,
+      liveLocationState: ride.liveLocationState
+    });
+  }
+
   if (loading) return (
     <ScreenLayout navigation={navigation} route={route} bgImage={heroImage}>
       <View className="flex-1 justify-center items-center p-8 bg-[#0b172a]/95 rounded-3xl border border-[#00f2fe]/30 backdrop-blur-xl">
@@ -94,6 +102,7 @@ export default function RideTrackingScreen({ navigation, route }) {
             const userConfirmed = ride.status === 'confirmed' || (isUser1 ? ride.user1_confirmed : ride.user2_confirmed);
             const userPaymentStatus = isUser1 ? ride.user1_payment_status : ride.user2_payment_status;
             const otherPaymentStatus = isUser1 ? ride.user2_payment_status : ride.user1_payment_status;
+            const rideStatusLabel = ride.status === 'confirmed' ? 'fulfilled' : ride.status === 'cancelled' ? 'cancelled' : 'pending';
 
             return (
               <View key={ride.id} className="bg-[#0b172a]/95 rounded-3xl p-5 mb-4 border border-[#00f2fe]/25 shadow-xl">
@@ -101,9 +110,9 @@ export default function RideTrackingScreen({ navigation, route }) {
                 {/* Card Header */}
                 <View className="flex-row justify-between items-center mb-3 pb-3 border-b border-white/[0.08]">
                   <Text className="text-white text-base font-black">Ride #{ride.id}</Text>
-                  <View className={`px-3 py-1 rounded-full ${ride.status === 'confirmed' ? 'bg-[#00f2fe]' : 'bg-[#ff5e36]'}`}>
-                    <Text className={`font-black text-[10px] uppercase ${ride.status === 'confirmed' ? 'text-[#050c1a]' : 'text-white'}`}>
-                      {ride.status}
+                  <View className={`px-3 py-1 rounded-full ${rideStatusLabel === 'fulfilled' ? 'bg-[#00f2fe]' : rideStatusLabel === 'cancelled' ? 'bg-[#ff5e36]' : 'bg-[#f5b700]'}`}>
+                    <Text className={`font-black text-[10px] uppercase ${rideStatusLabel === 'fulfilled' ? 'text-[#050c1a]' : 'text-white'}`}>
+                      {rideStatusLabel}
                     </Text>
                   </View>
                 </View>
@@ -122,6 +131,22 @@ export default function RideTrackingScreen({ navigation, route }) {
                     <Text className="text-[#8eb4c6] text-xs font-bold">Time:</Text>
                     <Text className="text-[#00f2fe] font-extrabold text-xs">{ride.ride_time ? new Date(ride.ride_time).toLocaleTimeString() : 'TBD'}</Text>
                   </View>
+                </View>
+
+                <View className="flex-row gap-2 mb-3">
+                  <TouchableOpacity
+                    className="flex-1 bg-[#00f2fe]/10 border border-[#00f2fe]/40 py-3 rounded-2xl items-center"
+                    onPress={() => openRideDetails(ride)}
+                  >
+                    <Text className="text-[#00f2fe] font-black text-xs uppercase tracking-wider">View Ride Details</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    className="flex-1 bg-white/[0.05] border border-white/[0.10] py-3 rounded-2xl items-center"
+                    onPress={() => navigation.navigate('Chat', { matchId: ride.id, ride })}
+                  >
+                    <Text className="text-white font-black text-xs uppercase tracking-wider">Open Chat</Text>
+                  </TouchableOpacity>
                 </View>
 
                 {/* Payment Status Badges */}
