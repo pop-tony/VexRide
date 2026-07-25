@@ -1,47 +1,33 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 
 export default function LogoutConfirm({ onLogout, loading = false, children, renderTrigger }) {
   const [visible, setVisible] = useState(false);
-
-  function open() {
-    if (!loading) setVisible(true);
-  }
+  function open() { if (!loading) setVisible(true); }
 
   return (
     <View>
-      {renderTrigger ? (
-        renderTrigger({ open, disabled: loading })
-      ) : (
-        <TouchableOpacity onPress={open} style={styles.button} disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="white" />
-          ) : children ? (
-            children
-          ) : (
-            <Text style={styles.text}>Logout</Text>
-          )}
+      {renderTrigger? renderTrigger({ open, disabled: loading }) : (
+        <TouchableOpacity onPress={open} className="bg-[#ff7a1a] p-3 rounded-xl" disabled={loading}>
+          {loading? <ActivityIndicator color="white" /> : children? children : <Text className="text-white font-bold">Logout</Text>}
         </TouchableOpacity>
       )}
 
       <Modal transparent visible={visible} animationType="fade">
-        <View style={styles.overlay}>
-          <View style={styles.card}>
-            <Text style={styles.title}>Logout</Text>
-            <Text style={styles.subtitle}>Are you sure you want to log out?</Text>
-            <View style={styles.actions}>
-              <TouchableOpacity onPress={() => setVisible(false)} style={styles.cancel}>
-                <Text style={styles.cancelText}>Cancel</Text>
+        <View className="flex-1 bg-black/60 justify-center items-center p-6">
+          <View className="bg-white w-full max-w-sm rounded- p-5">
+            <Text className="text-lg font-bold mb-2 text-zinc-900">Logout</Text>
+            <Text className="text-zinc-600 mb-5 leading-5">Are you sure you want to log out?</Text>
+            <View className="flex-row justify-end items-center gap-3">
+              <TouchableOpacity onPress={() => setVisible(false)} className="px-4 py-2 rounded-xl bg-zinc-100">
+                <Text className="text-zinc-600 font-bold">Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={async () => {
-                  setVisible(false);
-                  await onLogout && onLogout();
-                }}
-                style={styles.confirm}
+                onPress={async () => { setVisible(false); await onLogout?.(); }}
+                className="bg-[#ff7a1a] px-5 py-2.5 rounded-xl"
                 disabled={loading}
               >
-                {loading ? <ActivityIndicator color="white" /> : <Text style={styles.confirmText}>Logout</Text>}
+                {loading? <ActivityIndicator color="white" /> : <Text className="text-white font-bold">Logout</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -50,17 +36,3 @@ export default function LogoutConfirm({ onLogout, loading = false, children, ren
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  button: { backgroundColor: '#ff7a1a', padding: 12, borderRadius: 8 },
-  text: { color: 'white', fontWeight: 'bold' },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  card: { backgroundColor: '#fff', padding: 20, borderRadius: 12, width: '80%' },
-  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
-  subtitle: { marginBottom: 16 },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end' },
-  cancel: { marginRight: 12 },
-  cancelText: { color: '#555' },
-  confirm: { backgroundColor: '#ff7a1a', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 6 },
-  confirmText: { color: 'white', fontWeight: 'bold' },
-});

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ImageBackground, RefreshControl, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ImageBackground, RefreshControl, Alert, ScrollView } from 'react-native';
 import { getJson, postJson } from '../services/api';
 import { getStoredUser } from '../services/user';
 import { onSocket } from '../services/socket';
@@ -14,237 +14,106 @@ export default function RideTrackingScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    async function init() {
-      const user = await getStoredUser();
-      setCurrentUser(user);
-      if (user) {
-        await loadRides(user.id);
-      }
-    }
-    init();
-  }, []);
-
+  useEffect(() => { (async()=>{ const user = await getStoredUser(); setCurrentUser(user); if (user) await loadRides(user.id); })() }, []);
   useEffect(() => {
     if (!currentUser) return;
-
-    const cleanup = onSocket('rideConfirmed', ({ matchId }) => {
-      loadRides(currentUser.id);
-    });
-
-    const locationCleanup = onSocket('matchLocationUpdate', () => {
-      loadRides(currentUser.id);
-    });
-
-    const userLocationCleanup = onSocket('userLocationUpdated', () => {
-      loadRides(currentUser.id);
-    });
-
-    return () => {
-      cleanup();
-      locationCleanup();
-      userLocationCleanup();
-    };
+    const c1 = onSocket('rideConfirmed', ({ matchId }) => loadRides(currentUser.id));
+    const c2 = onSocket('matchLocationUpdate', () => loadRides(currentUser.id));
+    const c3 = onSocket('userLocationUpdated', () => loadRides(currentUser.id));
+    return () => { c1(); c2(); c3(); };
   }, [currentUser]);
 
   async function loadRides(userId) {
-    try {
-      const data = await getJson(`/activeRides/${userId}`);
-      setActiveRides(data.rides || []);
-    } catch (error) {
-      console.error('Error loading rides:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+    try { const data = await getJson(`/activeRides/${userId}`); setActiveRides(data.rides || []); }
+    catch (e) { console.error(e); } finally { setLoading(false); setRefreshing(false); }
   }
-
   async function handleConfirmRide(ride) {
-    if (!currentUser) {
-      Alert.alert('Error', 'User not found');
-      return;
-    }
-
-    if (
-      (ride.user1_id === currentUser.id && ride.user1_confirmed) ||
-      (ride.user2_id === currentUser.id && ride.user2_confirmed)
-    ) {
-      Alert.alert('Already Confirmed', 'You have already confirmed this ride');
-      return;
-    }
-
-    try {
-      await postJson('/confirmMatch', {
-        matchId: ride.id,
-        userId: currentUser.id
-      });
-      Alert.alert('Success', 'Ride confirmation recorded!');
-      if (currentUser) {
-        await loadRides(currentUser.id);
-      }
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    }
+    if (!currentUser) return Alert.alert('Error', 'User not found');
+    if ((ride.user1_id === currentUser.id && ride.user1_confirmed) || (ride.user2_id === currentUser.id && ride.user2_confirmed)) return Alert.alert('Already Confirmed', 'You have already confirmed this ride');
+    try { await postJson('/confirmMatch', { matchId: ride.id, userId: currentUser.id }); Alert.alert('Success', 'Ride confirmation recorded!'); await loadRides(currentUser.id); }
+    catch (error) { Alert.alert('Error', error.message); }
   }
+  async function onRefresh() { setRefreshing(true); if (currentUser) await loadRides(currentUser.id); }
 
-  async function onRefresh() {
-    setRefreshing(true);
-    if (currentUser) {
-      await loadRides(currentUser.id);
-    }
-  }
-
-  if (loading) {
-    return (
-      <ScreenLayout navigation={navigation} route={route}>
-        <View style={styles.container}>
-          <Text style={styles.loadingText}>Loading active rides...</Text>
-        </View>
-      </ScreenLayout>
-    );
-  }
+  if (loading) return (
+    <ScreenLayout navigation={navigation} route={route}>
+      <View className="flex-1 justify-center items-center p-6"><Text className="text-[#c9e5f4] text-base text-center">Loading active rides...</Text></View>
+    </ScreenLayout>
+  );
 
   return (
-    <ScreenLayout
-      navigation={navigation}
-      route={route}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.container}
-    >
-      <ImageBackground source={heroImage} style={styles.background} imageStyle={styles.backgroundImage}>
-        <View style={styles.overlay} />
-        <Text style={styles.title}>Active Rides</Text>
-        {activeRides[0]?.liveLocationState ? (
-          <LiveLocationMap
-            liveLocationState={activeRides[0].liveLocationState}
-            title="Live ride map"
-            height={260}
-          />
-        ) : (
-          <View style={styles.mapFallback}>
-            <Text style={styles.mapFallbackTitle}>Live map</Text>
-            <Text style={styles.mapFallbackText}>Waiting for GPS data from the matched riders.</Text>
-          </View>
-        )}
+    <ScreenLayout navigation={navigation} route={route} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} contentContainerStyle={{ flexGrow: 1 }}>
+      <ImageBackground source={heroImage} className="flex-1">
+        <View className="absolute inset-0 bg-[#04142c]/60" />
+        <ScrollView contentContainerStyle={{ padding: 24 }} className="flex-1" showsVerticalScrollIndicator={false}>
+          <Text className="text-[#21d3c7] text- font-black mb-5">Active Rides</Text>
 
-        {activeRides.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No active confirmed rides</Text>
-            <Text style={styles.emptySubtext}>Find and match a ride to see it here</Text>
-          </View>
-        ) : (
-          activeRides.map((ride) => {
+          {activeRides[0]?.liveLocationState? (
+            <View className="rounded- overflow-hidden mb-4 border border-[#21d3c7]/20">
+              <LiveLocationMap liveLocationState={activeRides[0].liveLocationState} title="Live ride map" height={260} />
+            </View>
+          ) : (
+            <View className="bg-white/10 rounded- p-4 border border-[#21d3c7]/20 mb-4">
+              <Text className="text-[#d4f3fb] font-extrabold mb-1">Live map</Text>
+              <Text className="text-[#c9e5f4] leading-5">Waiting for GPS data from the matched riders.</Text>
+            </View>
+          )}
+
+          {activeRides.length === 0? (
+            <View className="items-center mt-14">
+              <Text className="text-[#c9e5f4] text-lg font-semibold mb-2">No active confirmed rides</Text>
+              <Text className="text-[#8eb4c6] text-sm">Find and match a ride to see it here</Text>
+            </View>
+          ) : (
+            activeRides.map((ride) => {
               const isUser1 = ride.user1_id === currentUser?.id;
-              const otherUserId = isUser1 ? ride.user2_id : ride.user1_id;
-              const userConfirmed = ride.status === 'confirmed' || (isUser1 ? ride.user1_confirmed : ride.user2_confirmed);
-              const userPaymentStatus = isUser1 ? ride.user1_payment_status : ride.user2_payment_status;
-              const otherPaymentStatus = isUser1 ? ride.user2_payment_status : ride.user1_payment_status;
-
+              const userConfirmed = ride.status === 'confirmed' || (isUser1? ride.user1_confirmed : ride.user2_confirmed);
+              const userPaymentStatus = isUser1? ride.user1_payment_status : ride.user2_payment_status;
+              const otherPaymentStatus = isUser1? ride.user2_payment_status : ride.user1_payment_status;
               return (
-                <View key={ride.id} style={styles.rideCard}>
-                  <View style={styles.rideHeader}>
-                    <Text style={styles.rideId}>Ride #{ride.id}</Text>
-                    <View style={[styles.statusBadge, { backgroundColor: ride.status === 'confirmed' ? '#21d3c7' : '#ff7a1a' }]}>
-                      <Text style={styles.statusText}>{ride.status.toUpperCase()}</Text>
+                <View key={ride.id} className="bg-[#0a2f47]/90 rounded- p-4 mb-4 border border-[#21d3c7]/20">
+                  <View className="flex-row justify-between items-center mb-3">
+                    <Text className="text-[#21d3c7] text-base font-extrabold">Ride #{ride.id}</Text>
+                    <View className={`px-3 py-1.5 rounded-xl ${ride.status === 'confirmed'? 'bg-[#21d3c7]' : 'bg-[#ff7a1a]'}`}>
+                      <Text className="text-white font-bold text-xs">{ride.status.toUpperCase()}</Text>
                     </View>
                   </View>
 
-                  <View style={styles.rideDetails}>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.label}>From</Text>
-                      <Text style={styles.value}>{ride.pickup_location || 'Downtown'}</Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.label}>To</Text>
-                      <Text style={styles.value}>{ride.dropoff_location || 'Airport'}</Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.label}>Time</Text>
-                      <Text style={styles.value}>{ride.ride_time ? new Date(ride.ride_time).toLocaleTimeString() : 'TBD'}</Text>
+                  <View className="bg-white/5 rounded-xl p-3 mb-3">
+                    <View className="flex-row justify-between mb-2"><Text className="text-[#8eb4c6] text- font-semibold">From</Text><Text className="text-[#e8f9ff] text- font-semibold">{ride.pickup_location || 'Downtown'}</Text></View>
+                    <View className="flex-row justify-between mb-2"><Text className="text-[#8eb4c6] text- font-semibold">To</Text><Text className="text-[#e8f9ff] text- font-semibold">{ride.dropoff_location || 'Airport'}</Text></View>
+                    <View className="flex-row justify-between"><Text className="text-[#8eb4c6] text- font-semibold">Time</Text><Text className="text-[#e8f9ff] text- font-semibold">{ride.ride_time? new Date(ride.ride_time).toLocaleTimeString() : 'TBD'}</Text></View>
+                  </View>
+
+                  <View className="mb-3">
+                    <Text className="text-[#c9e5f4] text- font-bold mb-2">Payment Status</Text>
+                    <Text className="text-[#a8d6e8] text-xs mb-1">Your Payment: <Text className={userPaymentStatus === 'success'? 'text-[#21d3c7] font-bold' : 'text-[#ff7a1a] font-bold'}>{userPaymentStatus}</Text></Text>
+                    <Text className="text-[#a8d6e8] text-xs">Other Party: <Text className={otherPaymentStatus === 'success'? 'text-[#21d3c7] font-bold' : 'text-[#ff7a1a] font-bold'}>{otherPaymentStatus}</Text></Text>
+                  </View>
+
+                  <View className="mb-3 flex-row">
+                    <View className={`px-3 py-2 rounded-xl border ${userConfirmed? 'bg-[#21d3c7]/20 border-[#21d3c7]/40' : 'bg-[#ff7a1a]/20 border-[#ff7a1a]/40'}`}>
+                      <Text className="font-bold text-xs text-[#ff7a1a]">{userConfirmed? '✓ Confirmed' : 'Pending'}</Text>
                     </View>
                   </View>
 
-                  <View style={styles.paymentStatus}>
-                    <Text style={styles.paymentLabel}>Payment Status</Text>
-                    <View style={styles.paymentRow}>
-                      <Text style={styles.paymentText}>Your Payment: <Text style={userPaymentStatus === 'success' ? styles.success : styles.pending}>{userPaymentStatus}</Text></Text>
-                      <Text style={styles.paymentText}>Other Party: <Text style={otherPaymentStatus === 'success' ? styles.success : styles.pending}>{otherPaymentStatus}</Text></Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.confirmationStatus}>
-                    <Text style={styles.confirmLabel}>Your Confirmation</Text>
-                    <View style={styles.confirmRow}>
-                      <View style={[styles.confirmationBadge, userConfirmed && styles.confirmedBadge]}>
-                        <Text style={styles.confirmationText}>{userConfirmed ? '✓ Confirmed' : 'Pending'}</Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  {!userConfirmed && ride.status !== 'confirmed' && userPaymentStatus === 'success' && otherPaymentStatus === 'success' && (
-                    <TouchableOpacity style={styles.confirmButton} onPress={() => handleConfirmRide(ride)}>
-                      <Text style={styles.confirmButtonText}>Confirm Ride</Text>
+                  {!userConfirmed && ride.status!== 'confirmed' && userPaymentStatus === 'success' && otherPaymentStatus === 'success' && (
+                    <TouchableOpacity className="bg-[#21d3c7] py-3 rounded-xl items-center mt-3" onPress={() => handleConfirmRide(ride)}>
+                      <Text className="text-[#061426] font-extrabold text-sm">Confirm Ride</Text>
                     </TouchableOpacity>
                   )}
 
-                  {userPaymentStatus !== 'success' && (
-                    <View style={styles.warningBox}>
-                      <Text style={styles.warningText}>⚠ Both parties must complete payment to confirm</Text>
+                  {userPaymentStatus!== 'success' && (
+                    <View className="bg-[#ff7a1a]/15 rounded-xl p-3 mt-3 border border-[#ff7a1a]/30">
+                      <Text className="text-[#ff7a1a] text-xs font-semibold">⚠ Both parties must complete payment to confirm</Text>
                     </View>
                   )}
                 </View>
               );
             })
           )}
+        </ScrollView>
       </ImageBackground>
     </ScreenLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  background: { flex: 1 },
-  backgroundImage: { opacity: 0.7 },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(4,20,44,0.5)' },
-  container: { padding: 24 },
-  title: { color: '#21d3c7', fontSize: 28, fontWeight: '900', marginBottom: 20 },
-  loadingText: { color: '#c9e5f4', fontSize: 16, textAlign: 'center', marginTop: 40 },
-  emptyState: { alignItems: 'center', marginTop: 60 },
-  emptyText: { color: '#c9e5f4', fontSize: 18, fontWeight: '600', marginBottom: 8 },
-  emptySubtext: { color: '#8eb4c6', fontSize: 14 },
-  rideCard: { backgroundColor: 'rgba(10, 47, 71, 0.9)', borderRadius: 20, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(33, 211, 199, 0.2)' },
-  rideHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  rideId: { color: '#21d3c7', fontSize: 16, fontWeight: '800' },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
-  statusText: { color: 'white', fontWeight: '700', fontSize: 12 },
-  rideDetails: { backgroundColor: 'rgba(255, 255, 255, 0.04)', borderRadius: 14, padding: 12, marginBottom: 14 },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  label: { color: '#8eb4c6', fontSize: 13, fontWeight: '600' },
-  value: { color: '#e8f9ff', fontSize: 13, fontWeight: '600' },
-  paymentStatus: { marginBottom: 14 },
-  paymentLabel: { color: '#c9e5f4', fontSize: 13, fontWeight: '700', marginBottom: 8 },
-  paymentRow: { flexDirection: 'row', flexDirection: 'column' },
-  paymentText: { color: '#a8d6e8', fontSize: 12, marginBottom: 4 },
-  success: { color: '#21d3c7', fontWeight: '700' },
-  pending: { color: '#ff7a1a', fontWeight: '700' },
-  confirmationStatus: { marginBottom: 14 },
-  confirmLabel: { color: '#c9e5f4', fontSize: 13, fontWeight: '700', marginBottom: 8 },
-  confirmRow: { flexDirection: 'row' },
-  confirmationBadge: { backgroundColor: 'rgba(255, 122, 26, 0.2)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255, 122, 26, 0.4)' },
-  confirmedBadge: { backgroundColor: 'rgba(33, 211, 199, 0.2)', borderColor: 'rgba(33, 211, 199, 0.4)' },
-  confirmationText: { color: '#ff7a1a', fontWeight: '700', fontSize: 12 },
-  confirmButton: { backgroundColor: '#21d3c7', paddingVertical: 12, borderRadius: 14, alignItems: 'center', marginTop: 12 },
-  confirmButtonText: { color: '#061426', fontWeight: '800', fontSize: 14 },
-  warningBox: { backgroundColor: 'rgba(255, 122, 26, 0.15)', borderRadius: 12, padding: 12, marginTop: 12, borderWidth: 1, borderColor: 'rgba(255, 122, 26, 0.3)' },
-  warningText: { color: '#ff7a1a', fontSize: 12, fontWeight: '600' },
-  mapFallback: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 22,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(33,211,199,0.18)',
-    marginBottom: 16
-  },
-  mapFallbackTitle: { color: '#d4f3fb', fontWeight: '800', marginBottom: 6 },
-  mapFallbackText: { color: '#c9e5f4', lineHeight: 20 }
-});

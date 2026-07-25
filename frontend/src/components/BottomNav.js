@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text } from 'react-native';
 
 const navItems = [
   { name: 'Home', label: 'Home' },
@@ -10,44 +10,21 @@ const navItems = [
 
 export default function BottomNav({ navigation, activeRoute }) {
   return (
-    <View style={styles.navBar}>
-      {navItems.map((item) => (
-        <TouchableOpacity
-          key={item.name}
-          style={[styles.navButton, activeRoute === item.name && styles.navButtonActive]}
-          onPress={() => navigation.navigate(item.name)}
-        >
-          <Text style={[styles.navText, activeRoute === item.name && styles.navTextActive]}>{item.label}</Text>
-        </TouchableOpacity>
-      ))}
+    <View className="flex-row justify-between bg-[#071b2f] px-3 py-3 border-t border-white/10">
+      {navItems.map((item) => {
+        const active = activeRoute === item.name;
+        return (
+          <TouchableOpacity
+            key={item.name}
+            onPress={() => navigation.navigate(item.name)}
+            className={`flex-1 items-center py-2.5 rounded-2xl mx-1 ${active? 'bg-[#21d3c7]' : 'bg-white/5'}`}
+          >
+            <Text className={`font-bold text- ${active? 'text-white' : 'text-[#ccebf5]'}`}>
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: '#071b2f',
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)'
-  },
-  navButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderRadius: 14,
-    marginHorizontal: 4
-  },
-  navButtonActive: {
-    backgroundColor: '#21d3c7'
-  },
-  navText: {
-    color: '#ccebf5',
-    fontWeight: '700'
-  },
-  navTextActive: {
-    color: 'white'
-  }
-});

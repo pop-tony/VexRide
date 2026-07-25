@@ -17,28 +17,28 @@ const Stack = createStackNavigator();
 export default function AppNavigator() {
   const [initialRoute, setInitialRoute] = useState('Auth');
   const [ready, setReady] = useState(false);
-  const [navigationState, setNavigationState] = useState(null);
 
   useEffect(() => {
     async function loadUser() {
       const storedUser = await getStoredUser();
-      setInitialRoute(storedUser ? 'Home' : 'Auth');
+      setInitialRoute(storedUser? 'Home' : 'Auth');
       setReady(true);
     }
     loadUser();
   }, []);
 
-  if (!ready) {
-    return null;
-  }
+  if (!ready) return null;
 
   return (
-    <NavigationContainer
-      onStateChange={(state) => {
-        setNavigationState(state);
-      }}
-    >
-      <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+    <NavigationContainer>
+      <Stack.Navigator
+        initialRouteName={initialRoute}
+        screenOptions={{
+          headerShown: false,
+          cardStyle: { backgroundColor: '#061426' },
+          animationEnabled: true
+        }}
+      >
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="FindRide" component={FindRideScreen} />

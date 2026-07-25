@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ImageBackground } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ImageBackground } from 'react-native';
 import { postJson } from '../services/api';
 import ScreenLayout from '../components/ScreenLayout';
 import { getStoredUser } from '../services/user';
@@ -12,61 +12,38 @@ export default function FindRideScreen({ navigation, route }) {
   const [time, setTime] = useState('9:30 AM');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [APP_USER, setAPP_USER]  = useState({});
+  const [APP_USER, setAPP_USER] = useState({});
 
-  useEffect(()=>{
-    const gu = async()=> {
-      const theUser = await getStoredUser();
-      setAPP_USER(theUser); 
-    };
-    gu();
-  },[])
+  useEffect(()=>{ (async()=>{ setAPP_USER(await getStoredUser()) })() },[]);
 
   async function handleFindRide() {
     try {
-      setLoading(true);
-      setError('');
-      const data = await postJson('/findRide', {
-        origin: origin.trim(),
-        destination: destination.trim(),
-        time: time.trim(),
-        userName: APP_USER.name,
-        userEmail: APP_USER.email
-      });
-
-      navigation.navigate('MatchResult', {
-        origin,
-        destination,
-        time,
-        match: data.match,
-        request: data.request
-      });
-    } catch (err) {
-      setError(err.message || 'Could not find a ride');
-    } finally {
-      setLoading(false);
-    }
+      setLoading(true); setError('');
+      const data = await postJson('/findRide', { origin: origin.trim(), destination: destination.trim(), time: time.trim(), userName: APP_USER.name, userEmail: APP_USER.email });
+      navigation.navigate('MatchResult', { origin, destination, time, match: data.match, request: data.request });
+    } catch (err) { setError(err.message || 'Could not find a ride'); } finally { setLoading(false); }
   }
 
   return (
-    <ScreenLayout navigation={navigation} route={route} className="bg-dark">
-      <ImageBackground source={heroImage} style={styles.background} imageStyle={styles.backgroundImage} className="w-full">
-        <View style={styles.container} className="px-6">
-          <View style={styles.card}>
-            <Text style={styles.title}>Find your next ride</Text>
-            <Text style={styles.subtitle}>Enter your route and catch the best shared trip instantly.</Text>
+    <ScreenLayout navigation={navigation} route={route}>
+      <ImageBackground source={heroImage} className="flex-1 bg-[#061426]">
+        <View className="absolute inset-0 bg-[#061426]/40" />
+        <View className="flex-1 justify-center p-6">
+          <View className="w-full max-w-md self-center bg-[#081936]/95 rounded- p-6 border border-[#ff7a1a]/20">
+            <Text className="text- font-black text-[#21d3c7] mb-2">Find your next ride</Text>
+            <Text className="text-[#c9e5f4] mb-6 leading-6">Enter your route and catch the best shared trip instantly.</Text>
 
-            <Text style={styles.fieldLabel}>Origin</Text>
-            <TextInput style={styles.input} placeholder="Origin" placeholderTextColor="#9bb1ca" value={origin} onChangeText={setOrigin} />
-            <Text style={styles.fieldLabel}>Destination</Text>
-            <TextInput style={styles.input} placeholder="Destination" placeholderTextColor="#9bb1ca" value={destination} onChangeText={setDestination} />
-            <Text style={styles.fieldLabel}>Time</Text>
-            <TextInput style={styles.input} placeholder="Time (e.g. 7:30 PM)" placeholderTextColor="#9bb1ca" value={time} onChangeText={setTime} />
+            <Text className="text-[#c9e5f4] text- font-bold mb-2">Origin</Text>
+            <TextInput className="bg-white/10 rounded-2xl px-4 py-4 mb-4 text-white border border-white/10" placeholder="Origin" placeholderTextColor="#9bb1ca" value={origin} onChangeText={setOrigin} />
+            <Text className="text-[#c9e5f4] text- font-bold mb-2">Destination</Text>
+            <TextInput className="bg-white/10 rounded-2xl px-4 py-4 mb-4 text-white border border-white/10" placeholder="Destination" placeholderTextColor="#9bb1ca" value={destination} onChangeText={setDestination} />
+            <Text className="text-[#c9e5f4] text- font-bold mb-2">Time</Text>
+            <TextInput className="bg-white/10 rounded-2xl px-4 py-4 mb-4 text-white border border-white/10" placeholder="Time (e.g. 7:30 PM)" placeholderTextColor="#9bb1ca" value={time} onChangeText={setTime} />
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error? <Text className="text-[#ff9a5f] font-bold mb-3">{error}</Text> : null}
 
-            <TouchableOpacity style={styles.primaryButton} onPress={handleFindRide} disabled={loading}>
-              {loading ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>Find Match</Text>}
+            <TouchableOpacity className="bg-[#ff7a1a] p-4 rounded-2xl mt-2 items-center" onPress={handleFindRide} disabled={loading}>
+              {loading? <ActivityIndicator color="white" /> : <Text className="text-white text-center font-extrabold text-base">Find Match</Text>}
             </TouchableOpacity>
           </View>
         </View>
@@ -74,17 +51,3 @@ export default function FindRideScreen({ navigation, route }) {
     </ScreenLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  background: { flex: 1, backgroundColor: '#061426' },
-  backgroundImage: { opacity: 0.7 },
-  container: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  card: { backgroundColor: 'rgba(8, 25, 54, 0.94)', borderRadius: 28, padding: 24, borderWidth: 1, borderColor: 'rgba(255,122,26,0.18)' },
-  title: { fontSize: 32, fontWeight: '900', color: '#21d3c7', marginBottom: 8 },
-  subtitle: { color: '#c9e5f4', marginBottom: 24, lineHeight: 22 },
-  fieldLabel: { color: '#c9e5f4', fontSize: 13, fontWeight: '700', marginBottom: 8, marginTop: 4 },
-  input: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 18, padding: 16, marginBottom: 16, color: 'white', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-  error: { color: '#ff9a5f', marginBottom: 12, fontWeight: '700' },
-  primaryButton: { backgroundColor: '#ff7a1a', padding: 16, borderRadius: 18, marginTop: 8 },
-  buttonText: { color: 'white', textAlign: 'center', fontWeight: '800', fontSize: 16 }
-});

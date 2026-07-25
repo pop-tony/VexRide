@@ -4,7 +4,10 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { joinUser, socket, onSocketConnect } from './src/services/socket';
 import { getStoredUser } from './src/services/user';
 import { startLiveLocationTracking, stopLiveLocationTracking } from './src/services/liveLocation';
-// Web-only styles for responsive layout
+
+// Tailwind / NativeWind
+import './global.css';
+// Keep web styles if you still need them
 import './web/styles/screens.css';
 
 export default function App() {
@@ -13,25 +16,20 @@ export default function App() {
 
   useEffect(() => {
     let mounted = true;
-
     async function initUser() {
       const user = await getStoredUser();
+      if (!mounted) return;
       userIdRef.current = user?.id || null;
-      
       if (user?.id) {
-        if (!socket.connected) {
-          socket.connect();
-        }
+        if (!socket.connected) socket.connect();
         joinUser(user.id);
         stopTrackingRef.current = await startLiveLocationTracking(user.id);
-        console.log('User connected!')
+        console.log('User connected!');
       } else {
         await stopLiveLocationTracking();
       }
     }
-    
     initUser();
-
     return () => {
       mounted = false;
       stopTrackingRef.current?.();
@@ -40,13 +38,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Re-join on socket reconnection
     const cleanup = onSocketConnect(() => {
-      if (userIdRef.current) {
-        joinUser(userIdRef.current);
-      }
+      if (userIdRef.current) joinUser(userIdRef.current);
     });
-    
     return () => cleanup?.();
   }, []);
 
