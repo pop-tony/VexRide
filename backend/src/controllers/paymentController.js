@@ -257,10 +257,10 @@ const paymentController = {
     try {
       const { reference } = req.query;
       if (!reference) {
-        return res.send('<h1>Payment callback received</h1><p>No reference provided.</p>');
+        return res.status(400).send('<h1>Payment callback received</h1><p>No reference provided.</p>');
       }
 
-      await axios.get(`http://localhost:${process.env.PORT || 4000}/verifyPayment/${encodeURIComponent(reference)}`);
+      await verifyPaystackReference(reference);
       res.send(`<h1>Payment processed</h1><p>Reference: ${reference}</p><p>Return to the app to continue.</p>`);
     } catch (error) {
       res.status(500).send(`<h1>Payment callback error</h1><p>${error.message}</p>`);

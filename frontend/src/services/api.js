@@ -1,4 +1,6 @@
-export const API_BASE_URL = 'http://localhost:4000';
+const defaultApiBaseUrl = 'https://vexride.onrender.com';
+
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || defaultApiBaseUrl;
 
 async function requestJson(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, options);

@@ -57,11 +57,11 @@ npm run dev
 
 ### Setup
 
-1. Open a terminal and navigate to `frontend-new`
+1. Open a terminal and navigate to `frontend`
 2. Install dependencies:
 
 ```bash
-cd frontend-new
+cd frontend
 npm install
 ```
 
@@ -75,7 +75,8 @@ npm start
 
 ### Notes
 
-- The frontend expects the backend at `http://localhost:4000`
+- The frontend uses the deployed backend by default at `https://vexride.onrender.com`
+- To point a build at a different backend, set `EXPO_PUBLIC_API_BASE_URL`
 - Socket.io is used for live ride/group notifications
 - Use Paystack test card `4084 4084 0840 8408` with any future expiry and CVV
 
@@ -89,7 +90,7 @@ npm run dev
 ```
 
 ```bash
-cd frontend-new
+cd frontend
 npm start
 ```
 
