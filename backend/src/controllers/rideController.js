@@ -135,7 +135,9 @@ async function findMatchingRide(request) {
 
     const createdMatch = await Match.create({ 
       ride1_id: request.id, 
-      ride2_id: match.id, 
+      ride2_id: match.id,
+      user1_name: request.user_name,
+      user2_name: match.user_name,
       user1_id: request.user_id,
       user2_id: match.user_id,
       status: 'pending',
@@ -248,6 +250,7 @@ const rideController = {
         destination,
         time: parseRideTime(time),
         user_id: user.id,
+        user_name: user.name,
         status: 'pending'
       });
 

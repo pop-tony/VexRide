@@ -103,7 +103,7 @@ const matchController = {
         const { Op } = require('sequelize');
         rides = await Match.findAll({
           where: {
-            status: 'confirmed',
+            status: 'confirmed', 
             [Op.or]: [
               { user1_id: numUserId },
               { user2_id: numUserId }

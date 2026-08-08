@@ -7,6 +7,8 @@ const Match = sequelize.define('Match', {
   ride2_id: { type: DataTypes.INTEGER, allowNull: false },
   status: { type: DataTypes.STRING, defaultValue: 'pending' },
   user1_id: { type: DataTypes.INTEGER, allowNull: true },
+  user1_name: { type: DataTypes.STRING, allowNull: true },
+  user2_name: { type: DataTypes.STRING, allowNull: true },
   user2_id: { type: DataTypes.INTEGER, allowNull: true },
   user1_confirmed: { type: DataTypes.BOOLEAN, defaultValue: false },
   user2_confirmed: { type: DataTypes.BOOLEAN, defaultValue: false },
