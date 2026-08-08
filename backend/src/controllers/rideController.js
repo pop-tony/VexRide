@@ -156,7 +156,7 @@ async function findMatchingRide(request) {
     //console.log(request.user_id, match.user_id, request, match, createdMatch.id);
     emitToUser(request.user_id, 'matchFound', {
       matchId: createdMatch.id,
-      request,              // their own request
+      request: request,              // their own request
       counterParty: match,  // the other rider
       liveLocationState
     });
