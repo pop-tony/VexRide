@@ -61,11 +61,6 @@ export default function ScreenLayout({ navigation, route, children, refreshContr
                 </View>
               )}
 
-              {/* Live Status Badge */}
-              <View className="flex-row items-center bg-black/40 border border-[#00f2fe]/40 px-3 py-1.5 rounded-full gap-1.5 backdrop-blur-md shadow-md">
-                <View className="w-2 h-2 rounded-full bg-[#00f2fe]" />
-                <Text className="text-[#00f2fe] font-extrabold text-[10px] uppercase tracking-widest">Live System</Text>
-              </View>
             </View>
 
             {/* Screen Content */}
