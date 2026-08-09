@@ -147,7 +147,7 @@ async function findMatchingRide(request) {
     });
     await RideRequest.update({ status: 'matched' }, { where: { id: [request.id, match.id] } });
     const liveLocationState = await getLiveMatchState(createdMatch);
-
+ 
     const matchPayload = {
       matchId: createdMatch.id,
       request,

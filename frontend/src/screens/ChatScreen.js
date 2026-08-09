@@ -13,6 +13,8 @@ export default function ChatScreen({ navigation, route }) {
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
   const [matchDetails, setMatchDetails] = useState({ matchId, request, counterParty });
+  const [me, setMe] = useState('');
+  const [partner, setPartner] = useState('');
 
   function mergeMessages(existingMessages, incomingMessages) {
     const merged = [...existingMessages];
@@ -53,7 +55,7 @@ export default function ChatScreen({ navigation, route }) {
     if (!matchId) return undefined;
 
     joinChatRoom(matchId);
-
+ 
     let active = true;
     (async () => {
       try {
@@ -81,6 +83,11 @@ export default function ChatScreen({ navigation, route }) {
       cleanMatch();
     };
   }, [matchId]);
+
+  useEffect(() => {
+    const partnerName = matchDetails?.counterParty?.name || counterParty?.name || request?.name || 'Matched rider';
+    setPartner(partnerName);
+  }, [matchDetails, counterParty, request]);
 
   function handleSend() {
     const trimmedMessage = draft.trim();
@@ -123,7 +130,7 @@ export default function ChatScreen({ navigation, route }) {
                   <View className={`mb-3 flex-row ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
                     <View className={`max-w-[82%] rounded-3xl px-4 py-3 border ${isOwnMessage ? 'bg-[#ff5e36] border-[#ff5e36]/60' : 'bg-white/[0.06] border-white/[0.10]'}`}>
                       <Text className={`text-xs font-bold mb-1 ${isOwnMessage ? 'text-white/80' : 'text-[#8eb4c6]'}`}>
-                        {isOwnMessage ? 'You' : `User ${item.userId ?? 'Unknown'}`}
+                        {isOwnMessage ? 'You' : `${partner || 'Matched rider'}`}
                       </Text>
                       <Text className="text-white text-sm leading-5">{item.message}</Text>
                       <Text className={`text-[10px] font-semibold mt-2 ${isOwnMessage ? 'text-white/70' : 'text-[#8eb4c6]'}`}>

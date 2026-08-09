@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { getJson } from '../services/api';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { getJson, postJson } from '../services/api';
 import { onSocket } from '../services/socket';
 import ScreenLayout from '../components/ScreenLayout';
 import LiveLocationMap from '../components/LiveLocationMap';
-import { ZapIcon, PinIcon, FlagIcon, ClockIcon, CardIcon, TrackingIcon } from '../components/Icons';
+import { ZapIcon, PinIcon, FlagIcon, ClockIcon, ChatIcon, CheckIcon } from '../components/Icons';
+import { getStoredUser } from '../services/user';
 
 const heroImage = require('../../assets/images/vex_map_bg_1784946439656.jpg');
 
@@ -14,8 +15,13 @@ export default function MatchResultScreen({ navigation, route }) {
   const [status, setStatus] = useState(match ? 'Match ready' : 'Searching for a rider nearby...');
   const [activeRequest, setActiveRequest] = useState(request);
   const [counterParty, setCounterParty] = useState(match?.counterParty || null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmationNote, setConfirmationNote] = useState('');
 
   useEffect(() => {
+    (async () => setCurrentUser(await getStoredUser()))();
+
     const cleanup = onSocket('matchFound', ({ matchId, request, counterParty, liveLocationState }) => {
       setCurrentMatch({ id: matchId, liveLocationState });
       setActiveRequest(request);
@@ -35,6 +41,31 @@ export default function MatchResultScreen({ navigation, route }) {
   }, [currentMatch?.id]);
 
   const liveLocationState = currentMatch?.liveLocationState;
+
+  async function handleConfirmRide() {
+    if (!currentMatch?.id) return;
+    if (!currentUser?.id) {
+      Alert.alert('Sign in required', 'Please sign in before confirming this match.');
+      return;
+    }
+
+    try {
+      setConfirming(true);
+      const result = await postJson('/confirmMatch', { matchId: currentMatch.id, userId: currentUser.id });
+      setCurrentMatch(result.match || currentMatch);
+      if (result.match?.status === 'confirmed') {
+        setStatus('Ride confirmed by both riders');
+        setConfirmationNote('Both riders confirmed. You can keep chatting and coordinate externally.');
+      } else {
+        setStatus('Waiting for the other rider to confirm');
+        setConfirmationNote('Your confirmation is recorded. Waiting for the other rider.');
+      }
+    } catch (error) {
+      Alert.alert('Confirmation failed', error.message || 'Unable to confirm this match.');
+    } finally {
+      setConfirming(false);
+    }
+  }
 
   return (
     <ScreenLayout navigation={navigation} route={route} bgImage={heroImage}>
@@ -90,45 +121,46 @@ export default function MatchResultScreen({ navigation, route }) {
         {/* Live Status Info Banner */}
         <View className="bg-[#00f2fe]/10 border border-[#00f2fe]/30 rounded-2xl p-3.5 mb-5 items-center">
           <Text className="text-[#00f2fe] text-xs font-black tracking-wide text-center">{status}</Text>
+          <Text className="text-[#ccebf5] text-xs text-center mt-1 leading-4">
+            Match stays pending until both riders confirm. Chat first, then confirm when ready.
+          </Text>
           {liveLocationState?.pickupSummary ? (
             <Text className="text-[#ccebf5] text-xs text-center mt-1 leading-4">{liveLocationState.pickupSummary}</Text>
           ) : null}
           {counterParty ? (
             <Text className="text-[#ccebf5] text-xs text-center mt-1 leading-4">
-              Matched with {counterParty.name || 'another rider'}
+              Matched with {counterParty.name || 'another rider'} 
             </Text>
           ) : null}
         </View>
 
         <TouchableOpacity
-          className={`border border-[#00f2fe]/50 bg-[#00f2fe]/10 py-3.5 rounded-2xl items-center flex-row justify-center gap-2 shadow-md mb-3 ${currentMatch?.id ? 'active:bg-[#00f2fe]/20' : 'opacity-50'}`}
-          onPress={() => navigation.navigate('Chat', { matchId: currentMatch?.id, request: activeRequest, counterParty })}
-          disabled={!currentMatch?.id}
-        >
-          <Text className="text-[#00f2fe] font-extrabold text-sm">Open Chat</Text>
-        </TouchableOpacity>
-
-        {/* Action Buttons */}
-        <TouchableOpacity
           className={`py-4 rounded-2xl items-center shadow-xl mb-3 flex-row justify-center gap-2 ${
-            !currentMatch ? 'bg-[#ff5e36]/40 border border-[#ff5e36]/30' : 'bg-[#ff5e36] border border-[#ff5e36]/60 active:scale-98'
+            !currentMatch?.id || confirming ? 'bg-[#00f2fe]/40 border border-[#00f2fe]/30' : 'bg-[#00f2fe] border border-[#00f2fe]/60 active:scale-98'
           }`}
-          onPress={() => navigation.navigate('Payment', { amount: 24, matchId: currentMatch?.id })}
-          disabled={!currentMatch}
+          onPress={handleConfirmRide}
+          disabled={!currentMatch?.id || confirming}
         >
-          <CardIcon size={18} color="#ffffff" />
+          <CheckIcon size={18} color="#050c1a" />
           <Text className="text-white font-black text-base tracking-wide">
-            {currentMatch ? 'Continue to Payment' : 'Waiting for Match...'}
+            {confirming ? 'Confirming...' : currentMatch?.id ? 'Confirm Ride' : 'Waiting for Match...'}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          className="border border-[#00f2fe]/50 bg-[#00f2fe]/10 py-3.5 rounded-2xl items-center flex-row justify-center gap-2 active:bg-[#00f2fe]/20 shadow-md"
-          onPress={() => navigation.navigate('RideTracking')}
+          className={`border border-[#00f2fe]/50 bg-[#00f2fe]/10 py-3.5 rounded-2xl items-center flex-row justify-center gap-2 shadow-md ${currentMatch?.id ? 'active:bg-[#00f2fe]/20' : 'opacity-50'}`}
+          onPress={() => navigation.navigate('Chat', { matchId: currentMatch?.id, request: activeRequest, counterParty })}
+          disabled={!currentMatch?.id}
         >
-          <TrackingIcon size={16} color="#00f2fe" />
-          <Text className="text-[#00f2fe] font-extrabold text-sm">Open Live Tracking</Text>
+          <ChatIcon size={16} color="#00f2fe" />
+          <Text className="text-[#00f2fe] font-extrabold text-sm">Open Chat</Text>
         </TouchableOpacity>
+
+        {confirmationNote ? (
+          <View className="mt-3 bg-[#050e1d] border border-white/[0.08] rounded-2xl px-4 py-3">
+            <Text className="text-[#8eb4c6] text-xs leading-4">{confirmationNote}</Text>
+          </View>
+        ) : null}
 
       </View>
     </ScreenLayout>

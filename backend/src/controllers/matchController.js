@@ -58,14 +58,6 @@ const matchController = {
         if (!match) return res.status(404).json({ success: false, message: 'Match not found' });
       }
 
-      emitToUser(match.user1_id, 'rideConfirmed', { matchId, status: 'confirmed', match });
-      emitToUser(match.user2_id, 'rideConfirmed', { matchId, status: 'confirmed', match });
-
-      // Check if both payments are completed
-      if (match.user1_payment_status !== 'success' || match.user2_payment_status !== 'success') {
-        return res.status(400).json({ success: false, message: 'Both parties must complete payment first' });
-      }
-
       // Mark user as confirmed
       if (userId === match.user1_id) {
         match.user1_confirmed = true;
@@ -85,7 +77,7 @@ const matchController = {
         await match.save();
       }
 
-      res.json({ success: true, match, message: match.status === 'confirmed' ? 'Ride confirmed!' : 'Confirmation received, waiting for other party' });
+      res.json({ success: true, match, message: match.status === 'confirmed' ? 'Ride confirmed!' : 'Confirmation received, waiting for the other rider' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
