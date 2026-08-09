@@ -123,7 +123,7 @@ export default function ChatScreen({ navigation, route }) {
                   <View className={`mb-3 flex-row ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
                     <View className={`max-w-[82%] rounded-3xl px-4 py-3 border ${isOwnMessage ? 'bg-[#ff5e36] border-[#ff5e36]/60' : 'bg-white/[0.06] border-white/[0.10]'}`}>
                       <Text className={`text-xs font-bold mb-1 ${isOwnMessage ? 'text-white/80' : 'text-[#8eb4c6]'}`}>
-                        {partnerName}
+                        {isOwnMessage ? 'You' : partnerName}
                       </Text>
                       <Text className="text-white text-sm leading-5">{item.message}</Text>
                       <Text className={`text-[10px] font-semibold mt-2 ${isOwnMessage ? 'text-white/70' : 'text-[#8eb4c6]'}`}>

@@ -82,7 +82,6 @@ const matchController = {
       // If both confirmed, mark match as confirmed
       if (match.user1_confirmed && match.user2_confirmed) {
         match.status = 'confirmed';
-        console.log(match.user1_id, match.user2_id);
         emitToUser(match.user1_id, 'rideConfirmed', { matchId, status: 'confirmed', match });
         emitToUser(match.user2_id, 'rideConfirmed', { matchId, status: 'confirmed', match });
       }
