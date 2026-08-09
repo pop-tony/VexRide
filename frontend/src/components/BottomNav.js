@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, Platform } from 'react-native';
 import { HomeIcon, SearchIcon, TrackingIcon, GroupsIcon } from './Icons';
 
 const navItems = [
@@ -11,8 +11,15 @@ const navItems = [
 
 export default function BottomNav({ navigation, activeRoute }) {
   return (
-    <View className="w-full max-w-md self-center px-4 pb-4 pt-1 z-50">
-      <View className="bg-[#07162b]/95 border border-[#00f2fe]/30 rounded-full px-2 py-2 flex-row justify-around items-center shadow-2xl shadow-[#00f2fe]/25 backdrop-blur-2xl">
+    <View
+      className="w-full left-0 right-0 z-50 items-center justify-center px-4 pb-3 pt-1"
+      style={
+        Platform.OS === 'web'
+          ? { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 999 }
+          : { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 999 }
+      }
+    >
+      <View className="w-full max-w-md bg-[#07162b]/95 border border-[#00f2fe]/40 rounded-full px-2 py-2 flex-row justify-around items-center shadow-2xl shadow-[#00f2fe]/30 backdrop-blur-2xl">
         {navItems.map((item) => {
           const active = activeRoute === item.name;
           const { IconComponent } = item;
@@ -21,7 +28,7 @@ export default function BottomNav({ navigation, activeRoute }) {
               key={item.name}
               onPress={() => navigation.navigate(item.name)}
               activeOpacity={0.8}
-              className={`items-center justify-center py-2 px-3 sm:px-4 rounded-full flex-row gap-1.5 transition-all ${
+              className={`flex-1 items-center justify-center py-2 px-2 sm:px-4 rounded-full flex-row gap-1.5 transition-all ${
                 active
                   ? 'bg-[#00f2fe] border border-[#00f2fe] shadow-lg shadow-[#00f2fe]/40 scale-105'
                   : 'bg-transparent active:bg-white/[0.08]'

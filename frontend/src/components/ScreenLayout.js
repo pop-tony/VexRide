@@ -35,7 +35,7 @@ export default function ScreenLayout({ navigation, route, children, refreshContr
         <ScrollView
           className="flex-1"
           style={Platform.OS === 'web' ? { flex: 1, minHeight: '100%', overflowY: 'auto' } : { flex: 1 }}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: hideBottomNav ? 32 : 80 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: hideBottomNav ? 32 : 110 }}
           keyboardShouldPersistTaps="handled"
           refreshControl={refreshControl}
           showsVerticalScrollIndicator={showsVerticalScrollIndicator}
