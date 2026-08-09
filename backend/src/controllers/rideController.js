@@ -261,44 +261,6 @@ const rideController = {
     }
   },
 
-  async bookRide(req, res) {
-    try {
-      const dbReady = getDbReady();
-      const memoryStore = getMemoryStore();
-      const { matchId } = req.body;
-      let match;
-
-      if (dbReady) {
-        match = await Match.findByPk(matchId);
-        if (!match) return res.status(404).json({ success: false, message: 'Match not found' });
-      } else {
-        match = memoryStore.matches.find((entry) => entry.id === Number(matchId));
-        if (!match) return res.status(404).json({ success: false, message: 'Match not found' });
-      }
-
-      const candidates = dbReady
-        ? await RideRequest.findAll({ where: { id: [match.ride1_id, match.ride2_id] } })
-        : memoryStore.rideRequests.filter((entry) => entry.id === match.ride1_id || entry.id === match.ride2_id);
-
-      const userIds = candidates.map((ride) => ride.user_id);
-      const rideDetails = {
-        provider: 'Uber/Bolt mock',
-        driver: 'Ava',
-        car: 'Tesla Model 3',
-        eta: '4 mins',
-        license: 'LXB-9824',
-        matchId
-      };
-
-      userIds.forEach((userId) => emitToUser(userId, 'rideBooked', rideDetails));
-      broadcast('rideBookedGlobal', { matchId, ride: rideDetails });
-
-      res.json({ success: true, ride: rideDetails });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
-    }
-  },
-
   async updateLocation(req, res) {
     try {
       const dbReady = getDbReady();

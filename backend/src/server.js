@@ -116,7 +116,6 @@ app.get('/user/:userId', userController.getUserById);
 
 // Ride routes
 app.post('/findRide', rideController.findRide);
-app.post('/bookRide', rideController.bookRide);
 app.post('/location/update', rideController.updateLocation);
 app.get('/match/:matchId/live', rideController.getMatchLiveState);
 
