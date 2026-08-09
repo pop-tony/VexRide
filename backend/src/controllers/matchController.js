@@ -42,6 +42,20 @@ function markMatchConfirmedIfPaid(match) {
   return false;
 }
 
+function markRideCompletedIfConfirmed(match) {
+  if (
+    match &&
+    match.status !== 'completed' &&
+    match.user1_completed_confirmed &&
+    match.user2_completed_confirmed
+  ) {
+    match.status = 'completed';
+    return true;
+  }
+
+  return false;
+}
+
 const matchController = {
   async confirmMatch(req, res) {
     try {
@@ -116,6 +130,63 @@ const matchController = {
       }
 
       res.json({ success: true, rides });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  async confirmRideCompleted(req, res) {
+    try {
+      const dbReady = getDbReady();
+      const memoryStore = getMemoryStore();
+      const { matchId, userId } = req.body;
+
+      let match;
+      if (dbReady) {
+        match = await Match.findByPk(matchId);
+      } else {
+        match = memoryStore.matches.find((entry) => entry.id === Number(matchId));
+      }
+
+      if (!match) return res.status(404).json({ success: false, message: 'Match not found' });
+
+      if (userId === match.user1_id) {
+        match.user1_completed_confirmed = true;
+      } else if (userId === match.user2_id) {
+        match.user2_completed_confirmed = true;
+      } else {
+        return res.status(400).json({ success: false, message: 'User is not part of this match' });
+      }
+
+      const rideCompleted = markRideCompletedIfConfirmed(match);
+
+      if (dbReady) {
+        await match.save();
+      }
+
+      emitToUser(match.user1_id, 'rideCompletionUpdate', {
+        matchId,
+        user1_completed_confirmed: match.user1_completed_confirmed,
+        user2_completed_confirmed: match.user2_completed_confirmed,
+        status: match.status
+      });
+      emitToUser(match.user2_id, 'rideCompletionUpdate', {
+        matchId,
+        user1_completed_confirmed: match.user1_completed_confirmed,
+        user2_completed_confirmed: match.user2_completed_confirmed,
+        status: match.status
+      });
+
+      if (rideCompleted) {
+        emitToUser(match.user1_id, 'rideCompleted', { matchId, status: 'completed', match });
+        emitToUser(match.user2_id, 'rideCompleted', { matchId, status: 'completed', match });
+      }
+
+      res.json({
+        success: true,
+        match,
+        message: rideCompleted ? 'Ride marked as completed!' : 'Completion recorded, waiting for the other rider'
+      });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }

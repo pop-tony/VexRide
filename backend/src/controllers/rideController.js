@@ -13,6 +13,19 @@ function emitToUser(userId, event, payload) {
   if (io) io.to(`user:${userId}`).emit(event, payload);
 }
 
+function normalizeRideParticipant(record) {
+  if (!record) return null;
+
+  const plainRecord = record.get ? record.get({ plain: true }) : { ...record };
+  const name = plainRecord.name || plainRecord.user_name || plainRecord.userName || null;
+
+  return {
+    ...plainRecord,
+    name,
+    user_name: plainRecord.user_name || name
+  };
+}
+
 function broadcast(event, payload) {
   if (io) io.emit(event, payload);
 }
@@ -147,30 +160,35 @@ async function findMatchingRide(request) {
     });
     await RideRequest.update({ status: 'matched' }, { where: { id: [request.id, match.id] } });
     const liveLocationState = await getLiveMatchState(createdMatch);
+    const requestPayload = normalizeRideParticipant(request);
+    const counterPartyPayload = normalizeRideParticipant(match);
+    const createdMatchPayload = normalizeRideParticipant(createdMatch);
  
     const matchPayload = {
+      ...createdMatchPayload,
       matchId: createdMatch.id,
-      request,
-      counterParty: match,
-      matchedRide: match
+      request: requestPayload,
+      counterParty: counterPartyPayload,
+      matchedRide: counterPartyPayload,
+      liveLocationState
     };
 
     //console.log(request.user_id, match.user_id, request, match, createdMatch.id);
     emitToUser(request.user_id, 'matchFound', {
       matchId: createdMatch.id,
-      request: request,              // their own request
-      counterParty: match,  // the other rider
+      request: requestPayload,
+      counterParty: counterPartyPayload,
       liveLocationState
     });
 
     emitToUser(match.user_id, 'matchFound', {
       matchId: createdMatch.id,
-      request: match,       // their own request
-      counterParty: request, // the other rider
+      request: counterPartyPayload,
+      counterParty: requestPayload,
       liveLocationState
     });
     broadcast('rideMatched', { matchId: createdMatch.id, origin: request.origin, destination: request.destination });
-    return createdMatch;
+    return matchPayload;
   }
 
   const windowStart = new Date(request.time.getTime() - 30 * 60 * 1000);
@@ -205,6 +223,8 @@ async function findMatchingRide(request) {
     ride_time: request.time,
     user1_confirmed: false,
     user2_confirmed: false,
+    user1_completed_confirmed: false,
+    user2_completed_confirmed: false,
     user1_payment_status: 'pending',
     user2_payment_status: 'pending',
     createdAt: new Date(),
@@ -214,24 +234,28 @@ async function findMatchingRide(request) {
   request.status = 'matched';
   match.status = 'matched';
 
+  const requestPayload = normalizeRideParticipant(request);
+  const counterPartyPayload = normalizeRideParticipant(match);
+  const createdMatchPayload = normalizeRideParticipant(createdMatch);
   const matchPayload = {
+    ...createdMatchPayload,
     matchId: createdMatch.id,
-    request,
-    counterParty: match,
-    matchedRide: match
+    request: requestPayload,
+    counterParty: counterPartyPayload,
+    matchedRide: counterPartyPayload
   };
 
   emitToUser(request.user_id, 'matchFound', {
     matchId: createdMatch.id,
-    request,
-    counterParty: match,
+    request: requestPayload,
+    counterParty: counterPartyPayload,
     liveLocationState: await getLiveMatchState(createdMatch)
   });
 
   emitToUser(match.user_id, 'matchFound', {
     matchId: createdMatch.id,
-    request: match,
-    counterParty: request,
+    request: counterPartyPayload,
+    counterParty: requestPayload,
     liveLocationState: await getLiveMatchState(createdMatch)
   });
   
@@ -254,8 +278,9 @@ const rideController = {
         status: 'pending'
       });
 
+      const requestPayload = normalizeRideParticipant(request);
       const match = await findMatchingRide(request);
-      res.json({ success: true, request, match });
+      res.json({ success: true, request: requestPayload, match });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }

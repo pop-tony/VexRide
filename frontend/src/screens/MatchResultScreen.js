@@ -129,7 +129,7 @@ export default function MatchResultScreen({ navigation, route }) {
           ) : null}
           {counterParty ? (
             <Text className="text-[#ccebf5] text-xs text-center mt-1 leading-4">
-              Matched with {counterParty.name || 'another rider'} 
+              Matched with {counterParty.name || counterParty.user_name || 'another rider'} 
             </Text>
           ) : null}
         </View>

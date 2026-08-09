@@ -121,6 +121,7 @@ app.get('/match/:matchId/live', rideController.getMatchLiveState);
 
 // Match routes
 app.post('/confirmMatch', matchController.confirmMatch);
+app.post('/confirmRideCompleted', matchController.confirmRideCompleted);
 app.post('/updatePaymentStatus', matchController.updatePaymentStatus);
 app.get('/activeRides/:userId', matchController.getActiveRides);
 
