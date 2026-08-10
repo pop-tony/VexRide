@@ -92,6 +92,7 @@ const matchController = {
 
       res.json({ success: true, match, message: match.status === 'confirmed' ? 'Ride confirmed!' : 'Confirmation received, waiting for the other rider' });
     } catch (error) {
+      console.error('Error confirming match:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   },
@@ -130,6 +131,7 @@ const matchController = {
 
       res.json({ success: true, rides });
     } catch (error) {
+      console.error('Error fetching active rides:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   },
@@ -187,6 +189,8 @@ const matchController = {
         message: rideCompleted ? 'Ride marked as completed!' : 'Completion recorded, waiting for the other rider'
       });
     } catch (error) {
+      console.error('Error confirming ride completion:', error);
+      console.error('Error confirming match:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   },
@@ -228,6 +232,7 @@ const matchController = {
 
       res.json({ success: true, match });
     } catch (error) {
+      console.error('Error confirming match:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   }
