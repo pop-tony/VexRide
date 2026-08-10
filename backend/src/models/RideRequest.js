@@ -7,7 +7,7 @@ const RideRequest = sequelize.define('RideRequest', {
   destination: { type: DataTypes.STRING, allowNull: false },
   time: { type: DataTypes.DATE, allowNull: false },
   user_id: { type: DataTypes.INTEGER, allowNull: false },
-  user_name: { type: DataTypes.STRING, allowNull: false},
+  user_name: { type: DataTypes.STRING, allowNull: true},
   status: { type: DataTypes.STRING, defaultValue: 'pending' }
 }, {
   tableName: 'ride_requests',
