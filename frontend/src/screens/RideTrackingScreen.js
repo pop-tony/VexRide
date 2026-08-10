@@ -5,7 +5,7 @@ import { getStoredUser } from '../services/user';
 import { onSocket } from '../services/socket';
 import ScreenLayout from '../components/ScreenLayout';
 import LiveLocationMap from '../components/LiveLocationMap';
-import { TrackingIcon, CheckIcon, AlertIcon, CarIcon, ZapIcon } from '../components/Icons';
+import { TrackingIcon, CheckIcon, CarIcon, ZapIcon } from '../components/Icons';
 
 const heroImage = require('../../assets/images/vex_map_bg_1784946439656.jpg');
 
@@ -100,8 +100,6 @@ export default function RideTrackingScreen({ navigation, route }) {
           activeRides.map((ride) => {
             const isUser1 = ride.user1_id === currentUser?.id;
             const userConfirmed = ride.status === 'confirmed' || (isUser1 ? ride.user1_confirmed : ride.user2_confirmed);
-            const userPaymentStatus = isUser1 ? ride.user1_payment_status : ride.user2_payment_status;
-            const otherPaymentStatus = isUser1 ? ride.user2_payment_status : ride.user1_payment_status;
             const rideStatusLabel = ride.status === 'confirmed' ? 'fulfilled' : ride.status === 'cancelled' ? 'cancelled' : 'pending';
 
             return (
@@ -149,23 +147,6 @@ export default function RideTrackingScreen({ navigation, route }) {
                   </TouchableOpacity>
                 </View>
 
-                {/* Payment Status Badges */}
-                <View className="bg-[#050e1d] rounded-2xl p-3 mb-3 border border-white/[0.06]">
-                  <Text className="text-[#8eb4c6] text-[10px] uppercase font-bold mb-1.5">Payment Clearance</Text>
-                  <View className="flex-row justify-between items-center mb-1">
-                    <Text className="text-[#c9e5f4] text-xs">Your Status:</Text>
-                    <Text className={`text-xs font-extrabold ${userPaymentStatus === 'success' ? 'text-[#00f2fe]' : 'text-[#ff5e36]'}`}>
-                      {userPaymentStatus === 'success' ? '✓ Paid' : 'Pending'}
-                    </Text>
-                  </View>
-                  <View className="flex-row justify-between items-center">
-                    <Text className="text-[#c9e5f4] text-xs">Partner Status:</Text>
-                    <Text className={`text-xs font-extrabold ${otherPaymentStatus === 'success' ? 'text-[#00f2fe]' : 'text-[#ff5e36]'}`}>
-                      {otherPaymentStatus === 'success' ? '✓ Paid' : 'Pending'}
-                    </Text>
-                  </View>
-                </View>
-
                 {/* User Confirmation Status */}
                 <View className="flex-row items-center mb-3">
                   <View className={`px-3 py-1 rounded-full flex-row items-center gap-1.5 ${userConfirmed ? 'bg-[#00f2fe]/20 border border-[#00f2fe]/40' : 'bg-[#ff5e36]/20 border border-[#ff5e36]/40'}`}>
@@ -176,21 +157,20 @@ export default function RideTrackingScreen({ navigation, route }) {
                   </View>
                 </View>
 
-                {!userConfirmed && ride.status !== 'confirmed' && userPaymentStatus === 'success' && otherPaymentStatus === 'success' && (
+                {!userConfirmed && ride.status !== 'confirmed' && (
                   <TouchableOpacity
                     className="bg-[#00f2fe] border border-[#00f2fe]/60 py-3 rounded-2xl items-center shadow-lg active:scale-98 mt-2 flex-row justify-center gap-2"
                     onPress={() => handleConfirmRide(ride)}
                   >
                     <CheckIcon size={16} color="#050c1a" />
-                    <Text className="text-[#050c1a] font-black text-xs">Confirm Ride Now</Text>
+                    <Text className="text-[#050c1a] font-black text-xs">Confirm Ride</Text>
                   </TouchableOpacity>
                 )}
 
-                {userPaymentStatus !== 'success' && (
-                  <View className="bg-[#ff5e36]/15 border border-[#ff5e36]/30 rounded-2xl p-3 mt-2 flex-row items-center gap-2">
-                    <AlertIcon size={14} color="#ff7a5c" />
-                    <Text className="text-[#ff7a5c] text-[11px] font-bold flex-1 leading-4">
-                      Both parties must complete Paystack payment to enable ride confirmation
+                {!userConfirmed && ride.status !== 'confirmed' && (
+                  <View className="bg-[#00f2fe]/10 border border-[#00f2fe]/25 rounded-2xl p-3 mt-2">
+                    <Text className="text-[#8eb4c6] text-[11px] font-bold leading-4">
+                      Confirm when you are ready. Both riders can chat first and decide how to proceed.
                     </Text>
                   </View>
                 )}

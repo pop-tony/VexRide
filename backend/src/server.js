@@ -116,12 +116,12 @@ app.get('/user/:userId', userController.getUserById);
 
 // Ride routes
 app.post('/findRide', rideController.findRide);
-app.post('/bookRide', rideController.bookRide);
 app.post('/location/update', rideController.updateLocation);
 app.get('/match/:matchId/live', rideController.getMatchLiveState);
 
 // Match routes
 app.post('/confirmMatch', matchController.confirmMatch);
+app.post('/confirmRideCompleted', matchController.confirmRideCompleted);
 app.post('/updatePaymentStatus', matchController.updatePaymentStatus);
 app.get('/activeRides/:userId', matchController.getActiveRides);
 

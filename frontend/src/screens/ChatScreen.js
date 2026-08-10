@@ -53,7 +53,7 @@ export default function ChatScreen({ navigation, route }) {
     if (!matchId) return undefined;
 
     joinChatRoom(matchId);
-
+ 
     let active = true;
     (async () => {
       try {
@@ -90,7 +90,7 @@ export default function ChatScreen({ navigation, route }) {
     setDraft('');
   }
 
-  const partnerName = matchDetails?.counterParty?.name || request?.name || 'Matched rider';
+  const partnerName = matchDetails?.counterParty?.name || matchDetails?.counterParty?.user_name || counterParty?.name || counterParty?.user_name || request?.name || request?.user_name || 'Matched rider';
 
   return (
     <ScreenLayout navigation={navigation} route={route} bgImage={heroImage} hideBottomNav>
@@ -123,7 +123,7 @@ export default function ChatScreen({ navigation, route }) {
                   <View className={`mb-3 flex-row ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
                     <View className={`max-w-[82%] rounded-3xl px-4 py-3 border ${isOwnMessage ? 'bg-[#ff5e36] border-[#ff5e36]/60' : 'bg-white/[0.06] border-white/[0.10]'}`}>
                       <Text className={`text-xs font-bold mb-1 ${isOwnMessage ? 'text-white/80' : 'text-[#8eb4c6]'}`}>
-                        {isOwnMessage ? 'You' : `User ${item.userId ?? 'Unknown'}`}
+                        {isOwnMessage ? 'You' : partnerName}
                       </Text>
                       <Text className="text-white text-sm leading-5">{item.message}</Text>
                       <Text className={`text-[10px] font-semibold mt-2 ${isOwnMessage ? 'text-white/70' : 'text-[#8eb4c6]'}`}>

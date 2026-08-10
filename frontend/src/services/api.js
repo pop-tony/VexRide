@@ -1,4 +1,5 @@
-const defaultApiBaseUrl = 'https://vexride.onrender.com';
+
+const defaultApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || defaultApiBaseUrl;
 

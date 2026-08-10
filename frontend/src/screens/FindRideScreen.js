@@ -21,6 +21,7 @@ export default function FindRideScreen({ navigation, route }) {
     try {
       setLoading(true); setError('');
       const data = await postJson('/findRide', { origin: origin.trim(), destination: destination.trim(), time: time.trim(), userName: APP_USER.name, userEmail: APP_USER.email });
+      console.log(data)
       navigation.navigate('MatchResult', { origin, destination, time, match: data.match, request: data.request });
     } catch (err) { setError(err.message || 'Could not find a ride'); } finally { setLoading(false); }
   }
