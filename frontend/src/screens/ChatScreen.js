@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView
 import { getJson } from '../services/api';
 import ScreenLayout from '../components/ScreenLayout';
 import { getStoredUser } from '../services/user';
-import { joinChatRoom, onSocket, sendChatMessage, socket } from '../services/socket';
+import { joinChatRoom, joinUser, onSocket, onSocketConnect, sendChatMessage, socket } from '../services/socket';
 
 const heroImage = require('../../assets/images/vex_map_bg_1784946439656.jpg');
 
@@ -32,20 +32,25 @@ export default function ChatScreen({ navigation, route }) {
 
   useEffect(() => {
     let active = true;
+    let cleanConnection;
 
     async function loadUser() {
       const user = await getStoredUser();
       if (!active) return;
       setCurrentUser(user);
 
-      if (user?.id && !socket.connected) {
-        socket.connect();
-      }
+      if (!user?.id) return;
+
+      const registerUser = () => joinUser(user.id);
+      cleanConnection = onSocketConnect(registerUser);
+      if (socket.connected) registerUser();
+      else socket.connect();
     }
 
     loadUser();
     return () => {
       active = false;
+      cleanConnection?.();
     };
   }, []);
 
@@ -117,7 +122,8 @@ export default function ChatScreen({ navigation, route }) {
               data={messages}
               keyExtractor={(item, index) => `${item.timestamp || index}-${index}`}
               renderItem={({ item }) => {
-                const isOwnMessage = String(item.userId) === String(currentUser?.id);
+                const senderId = item.userId ?? item.user_id;
+                const isOwnMessage = String(senderId) === String(currentUser?.id);
 
                 return (
                   <View className={`mb-3 flex-row ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
