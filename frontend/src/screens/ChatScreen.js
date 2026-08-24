@@ -64,6 +64,7 @@ export default function ChatScreen({ navigation, route }) {
       try {
         const result = await getJson(`/match/${matchId}/chat`);
         if (!active) return;
+        //console.log(existingMessages, result.messages || []);
         setMessages((existingMessages) => mergeMessages(existingMessages, result.messages || []));
       } catch (error) {
         console.warn(error);
@@ -111,7 +112,7 @@ export default function ChatScreen({ navigation, route }) {
             </View>
           </View>
 
-          <View className="flex-1 rounded-3xl border border-[#00f2fe]/20 bg-[#0b172a]/95 overflow-hidden shadow-2xl">
+          <View className="max-h-[520px] flex-1 rounded-3xl border border-[#00f2fe]/20 bg-[#0b172a]/95 overflow-auto shadow-2xl">
             <View className="px-4 py-3 border-b border-white/[0.08] bg-white/[0.03]">
               <Text className="text-white font-extrabold text-sm">{partnerName}</Text>
               <Text className="text-[#8eb4c6] text-xs mt-0.5">Private room chat for this ride</Text>
@@ -122,6 +123,7 @@ export default function ChatScreen({ navigation, route }) {
               data={messages}
               keyExtractor={(item, index) => `${item.timestamp || index}-${index}`}
               renderItem={({ item }) => {
+                //{console.log(item, messages)}
                 const senderId = item.userId ?? item.user_id;
                 const isOwnMessage = String(senderId) === String(currentUser?.id);
 
