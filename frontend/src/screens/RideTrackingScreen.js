@@ -6,6 +6,7 @@ import { onSocket } from '../services/socket';
 import ScreenLayout from '../components/ScreenLayout';
 import LiveLocationMap from '../components/LiveLocationMap';
 import { TrackingIcon, CheckIcon, CarIcon, ZapIcon } from '../components/Icons';
+import ChatUnreadBadge from '../components/ChatUnreadBadge';
 
 const heroImage = require('../../assets/images/vex_map_bg_1784946439656.jpg');
 
@@ -144,6 +145,7 @@ export default function RideTrackingScreen({ navigation, route }) {
                     onPress={() => navigation.navigate('Chat', { matchId: ride.id, ride })}
                   >
                     <Text className="text-white font-black text-xs uppercase tracking-wider">Open Chat</Text>
+                    <ChatUnreadBadge />
                   </TouchableOpacity>
                 </View>
 

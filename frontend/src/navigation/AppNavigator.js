@@ -12,6 +12,9 @@ import BrowseGroupsScreen from '../screens/BrowseGroupsScreen';
 import RideTrackingScreen from '../screens/RideTrackingScreen';
 import AuthScreen from '../screens/AuthScreen';
 import { getStoredUser } from '../services/user';
+import { getJson } from '../services/api';
+import { joinUser, onSocket, onSocketConnect, socket } from '../services/socket';
+import { incrementUnread, setUnreadCount } from '../services/chatBadge';
 
 const Stack = createStackNavigator();
 
@@ -27,6 +30,38 @@ export default function AppNavigator() {
     }
     loadUser();
   }, []);
+
+  useEffect(() => {
+    if (!ready) return undefined;
+    let cleanConnection;
+    let active = true;
+
+    getStoredUser().then(async (user) => {
+      if (!active || !user?.id) return;
+      try {
+        const result = await getJson(`/messages/unread/${user.id}`);
+        if (active) setUnreadCount(result.unreadCount);
+      } catch (error) {
+        console.warn('Unable to load unread messages:', error.message);
+      }
+      const registerUser = () => joinUser(user.id);
+      cleanConnection = onSocketConnect(registerUser);
+      if (socket.connected) registerUser();
+      else socket.connect();
+    });
+
+    const cleanMessage = onSocket('chatMessage', (message) => {
+      getStoredUser().then((user) => {
+        if (user?.id && Number(message.receiverId) === Number(user.id) && !message.seen) incrementUnread();
+      });
+    });
+
+    return () => {
+      active = false;
+      cleanConnection?.();
+      cleanMessage();
+    };
+  }, [ready]);
 
   if (!ready) return null;
 

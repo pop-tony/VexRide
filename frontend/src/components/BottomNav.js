@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, Platform } from 'react-native';
 import { HomeIcon, SearchIcon, TrackingIcon, GroupsIcon } from './Icons';
+import { useUnreadCount } from '../services/chatBadge';
 
 const navItems = [
   { name: 'Home', label: 'Home', IconComponent: HomeIcon },
@@ -10,6 +11,8 @@ const navItems = [
 ];
 
 export default function BottomNav({ navigation, activeRoute }) {
+  const unreadCount = useUnreadCount();
+
   return (
     <View
       className="w-full left-0 right-0 z-50 items-center justify-center px-4 pb-3 pt-1"
@@ -35,14 +38,21 @@ export default function BottomNav({ navigation, activeRoute }) {
               }`}
             >
               <IconComponent size={17} color={active ? '#050c1a' : '#8eb4c6'} />
-              <Text
-                numberOfLines={1}
-                className={`font-black text-xs tracking-wider ${
-                  active ? 'text-[#050c1a]' : 'text-[#8eb4c6]'
-                }`}
-              >
-                {item.label}
-              </Text>
+              <View className="flex-row items-center gap-1.5">
+                <Text
+                  numberOfLines={1}
+                  className={`font-black text-xs tracking-wider ${
+                    active ? 'text-[#050c1a]' : 'text-[#8eb4c6]'
+                  }`}
+                >
+                  {item.label}
+                </Text>
+                {item.name === 'RideTracking' && unreadCount > 0 ? (
+                  <View className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 items-center justify-center">
+                    <Text className="text-white text-[10px] font-black">{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                  </View>
+                ) : null}
+              </View>
             </TouchableOpacity>
           );
         })}

@@ -6,6 +6,7 @@ import ScreenLayout from '../components/ScreenLayout';
 import LiveLocationMap from '../components/LiveLocationMap';
 import { ZapIcon, PinIcon, FlagIcon, ClockIcon, ChatIcon, CheckIcon } from '../components/Icons';
 import { getStoredUser } from '../services/user';
+import ChatUnreadBadge from '../components/ChatUnreadBadge';
 
 const heroImage = require('../../assets/images/vex_map_bg_1784946439656.jpg');
 
@@ -154,6 +155,7 @@ export default function MatchResultScreen({ navigation, route }) {
         >
           <ChatIcon size={16} color="#00f2fe" />
           <Text className="text-[#00f2fe] font-extrabold text-sm">Open Chat</Text>
+          <ChatUnreadBadge />
         </TouchableOpacity>
 
         {confirmationNote ? (
