@@ -166,7 +166,7 @@ export default function ChatScreen({ navigation, route }) {
     const trimmedMessage = draft.trim();
     if (!trimmedMessage || !matchId) return;
 
-    sendChatMessage({ matchId, message: trimmedMessage });
+    sendChatMessage({ matchId, message: trimmedMessage, userId: currentUser?.id });
     setDraft('');
   }
 

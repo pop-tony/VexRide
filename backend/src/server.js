@@ -39,21 +39,32 @@ io.on('connection', (socket) => {
     socket.join(`chat:${matchId}`);
   });
 
-  socket.on('sendChatMessage', async ({ matchId, message }) => {
+  socket.on('sendChatMessage', async ({ matchId, message, userId }) => {
     const trimmedMessage = typeof message === 'string' ? message.trim() : '';
     if (!matchId || !trimmedMessage) return;
 
     const numericMatchId = Number(matchId);
-    const senderId = socket.data.userId || null;
+    const senderId = Number(userId || socket.data.userId);
+    if (!senderId) return;
+
+    // Keep socket identity in sync for this connection after first valid send.
+    socket.data.userId = senderId;
+
     const match = getDbReady()
       ? await Match.findByPk(numericMatchId)
       : getMemoryStore().matches.find((entry) => Number(entry.id) === numericMatchId);
-    const receiverId = match && Number(match.user1_id) === Number(senderId) ? match.user2_id : match?.user1_id;
+    if (!match) return;
+
+    const senderIsUser1 = Number(match.user1_id) === Number(senderId);
+    const senderIsUser2 = Number(match.user2_id) === Number(senderId);
+    if (!senderIsUser1 && !senderIsUser2) return;
+
+    const receiverId = senderIsUser1 ? Number(match.user2_id) : Number(match.user1_id);
     const timestamp = new Date().toISOString();
     const payload = {
       matchId: numericMatchId,
       userId: senderId,
-      receiverId: receiverId || null,
+      receiverId,
       message: trimmedMessage,
       seen: false,
       timestamp
