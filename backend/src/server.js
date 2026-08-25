@@ -39,38 +39,89 @@ io.on('connection', (socket) => {
     socket.join(`chat:${matchId}`);
   });
 
-  socket.on('sendChatMessage', ({ matchId, message }) => {
+  socket.on('sendChatMessage', async ({ matchId, message }) => {
     const trimmedMessage = typeof message === 'string' ? message.trim() : '';
     if (!matchId || !trimmedMessage) return;
 
+    const numericMatchId = Number(matchId);
+    const senderId = socket.data.userId || null;
+    const match = getDbReady()
+      ? await Match.findByPk(numericMatchId)
+      : getMemoryStore().matches.find((entry) => Number(entry.id) === numericMatchId);
+    const receiverId = match && Number(match.user1_id) === Number(senderId) ? match.user2_id : match?.user1_id;
     const timestamp = new Date().toISOString();
     const payload = {
-      matchId: Number(matchId),
-      userId: socket.data.userId || null,
+      matchId: numericMatchId,
+      userId: senderId,
+      receiverId: receiverId || null,
       message: trimmedMessage,
+      seen: false,
       timestamp
     };
 
     const dbReady = getDbReady();
     if (dbReady) {
-      ChatMessage.create({
-        match_id: Number(matchId),
-        user_id: payload.userId,
-        message: trimmedMessage
-      }).catch((error) => console.warn('Failed to persist chat message:', error.message));
+      try {
+        const savedMessage = await ChatMessage.create({
+          match_id: numericMatchId,
+          user_id: payload.userId,
+          receiver_id: payload.receiverId,
+          message: trimmedMessage,
+          seen: false
+        });
+        payload.id = savedMessage.id;
+      } catch (error) {
+        console.warn('Failed to persist chat message:', error.message);
+      }
     } else {
       const memoryStore = getMemoryStore();
+      payload.id = memoryStore.chatMessages.length + 1;
       memoryStore.chatMessages.push({
-        id: memoryStore.chatMessages.length + 1,
+        id: payload.id,
         match_id: Number(matchId),
         user_id: payload.userId,
+        receiver_id: payload.receiverId,
         message: trimmedMessage,
+        seen: false,
         createdAt: timestamp,
         updatedAt: timestamp
       });
     }
 
     io.to(`chat:${matchId}`).emit('chatMessage', payload);
+  });
+
+  socket.on('messageSeen', async ({ matchId, messageId, userId }) => {
+    if (!matchId || !messageId) return;
+
+    const numericMatchId = Number(matchId);
+    const numericMessageId = Number(messageId);
+    const dbReady = getDbReady();
+    const memoryStore = getMemoryStore();
+
+    if (dbReady) {
+      await ChatMessage.update(
+        { seen: true },
+        { where: { id: numericMessageId, match_id: numericMatchId, receiver_id: Number(userId) } }
+      );
+    } else {
+      const message = memoryStore.chatMessages.find(
+        (entry) => Number(entry.id) === numericMessageId && Number(entry.match_id) === numericMatchId
+      );
+      if (message && Number(message.receiver_id) === Number(userId)) message.seen = true;
+    }
+
+    io.to(`chat:${matchId}`).emit('onMessageSeen', { matchId: numericMatchId, messageId: numericMessageId, userId: Number(userId) });
+  });
+
+  socket.on('typing:start', ({ matchId }) => {
+    if (!matchId) return;
+    socket.to(`chat:${matchId}`).emit('onTypingStart', { matchId: Number(matchId), userId: socket.data.userId || null });
+  });
+
+  socket.on('typing:stop', ({ matchId }) => {
+    if (!matchId) return;
+    socket.to(`chat:${matchId}`).emit('onTypingStop', { matchId: Number(matchId), userId: socket.data.userId || null });
   });
 });
 
@@ -91,12 +142,54 @@ app.get('/match/:matchId/chat', async (req, res) => {
     res.json({
       success: true,
       messages: messages.map((message) => ({
+        id: message.id,
         matchId: message.match_id,
         userId: message.user_id,
+        receiverId: message.receiver_id,
         message: message.message,
-        timestamp: message.createdAt || message.createdAt
+        seen: Boolean(message.seen),
+        timestamp: message.createdAt
       }))
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.patch('/messages/:messageId/seen', async (req, res) => {
+  try {
+    const messageId = Number(req.params.messageId);
+    const userId = Number(req.body.userId);
+    if (!messageId || !userId) return res.status(400).json({ success: false, message: 'messageId and userId are required' });
+
+    if (getDbReady()) {
+      const [updatedCount] = await ChatMessage.update(
+        { seen: true },
+        { where: { id: messageId, receiver_id: userId } }
+      );
+      if (!updatedCount) return res.status(404).json({ success: false, message: 'Message not found' });
+    } else {
+      const message = getMemoryStore().chatMessages.find((entry) => Number(entry.id) === messageId && Number(entry.receiver_id) === userId);
+      if (!message) return res.status(404).json({ success: false, message: 'Message not found' });
+      message.seen = true;
+    }
+
+    res.json({ success: true, messageId, seen: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get('/messages/unread/:userId', async (req, res) => {
+  try {
+    const userId = Number(req.params.userId);
+    if (!userId) return res.status(400).json({ success: false, message: 'userId is required' });
+
+    const unreadCount = getDbReady()
+      ? await ChatMessage.count({ where: { receiver_id: userId, seen: false } })
+      : getMemoryStore().chatMessages.filter((message) => Number(message.receiver_id) === userId && !message.seen).length;
+
+    res.json({ success: true, unreadCount });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

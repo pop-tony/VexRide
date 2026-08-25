@@ -20,6 +20,14 @@ export async function postJson(path, body) {
   });
 }
 
+export async function patchJson(path, body) {
+  return requestJson(path, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
+
 export async function getJson(path) {
   return requestJson(path, { method: 'GET' });
 }

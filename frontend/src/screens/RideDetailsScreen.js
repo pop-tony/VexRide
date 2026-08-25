@@ -5,6 +5,7 @@ import { getStoredUser } from '../services/user';
 import ScreenLayout from '../components/ScreenLayout';
 import LiveLocationMap from '../components/LiveLocationMap';
 import { CheckIcon, PinIcon, FlagIcon, ClockIcon, HomeIcon, ChatIcon, UsersIcon } from '../components/Icons';
+import ChatUnreadBadge from '../components/ChatUnreadBadge';
 
 const heroImage = require('../../assets/images/vex_home_bg_1784946351687.jpg');
 
@@ -173,6 +174,7 @@ export default function RideDetailsScreen({ navigation, route }) {
           >
             <ChatIcon size={18} color="#00f2fe" />
             <Text className="text-[#00f2fe] font-black text-base tracking-wide">Open Chat</Text>
+            <ChatUnreadBadge />
           </TouchableOpacity>
         ) : null}
 
