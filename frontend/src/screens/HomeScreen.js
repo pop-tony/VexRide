@@ -79,7 +79,7 @@ export default function HomeScreen({ navigation, route }) {
         <Animated.View style={{ transform: [{ scale: heroScale }] }} className="w-full rounded-3xl overflow-hidden mb-5 border border-[#00f2fe]/30 shadow-2xl bg-[#0b172a]/95 p-5 md:p-6 backdrop-blur-xl">
           <View className="flex-row items-center gap-2 mb-2">
             <View className="bg-[#00f2fe]/20 px-2.5 py-1 rounded-full border border-[#00f2fe]/40 flex-row items-center gap-1">
-              <ZapIcon size={12} color="#00f2fe" />
+              {/*<ZapIcon size={12} color="#00f2fe" />*/}
               <Text className="text-[#00f2fe] font-black text-[10px] uppercase tracking-widest">Real-time Mobility</Text>
             </View>
           </View>

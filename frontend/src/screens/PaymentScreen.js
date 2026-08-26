@@ -5,6 +5,7 @@ import { onSocket } from '../services/socket';
 import ScreenLayout from '../components/ScreenLayout';
 import { getStoredUser } from '../services/user';
 import { CardIcon, InfoIcon, LockIcon, CheckIcon } from '../components/Icons';
+import { friendlyError, logError } from '../services/errorHandling';
 
 const heroImage = require('../../assets/images/vex_home_bg_1784946351687.jpg');
 
@@ -35,7 +36,7 @@ export default function PaymentScreen({ navigation, route }) {
       const payload = paymentType === 'group' ? { groupId, groupMemberId, userId: currentUser?.id, amount } : { matchId, userId: currentUser?.id, amount };
       const data = await postJson('/processPayment', payload);
       setReference(data.reference); setPaymentUrl(data.authorizationUrl); setStatusMessage('Opening Paystack checkout...'); await Linking.openURL(data.authorizationUrl);
-    } catch (err) { setStatusMessage(err.message || 'Payment failed'); } finally { setLoading(false); }
+    } catch (err) { logError('Initialize payment', err); setStatusMessage(friendlyError(err, 'Payment could not be started. Please try again.')); } finally { setLoading(false); }
   }
 
   async function handleVerify() {
@@ -47,7 +48,7 @@ export default function PaymentScreen({ navigation, route }) {
         setStatusMessage('Payment success. Ride booking is not part of this flow.');
       }
       if (status === 'success' && paymentType === 'group') navigation.goBack();
-    } catch (err) { setStatusMessage(err.message || 'Verification failed'); } finally { setLoading(false); }
+    } catch (err) { logError('Verify payment', err); setStatusMessage(friendlyError(err, 'Payment verification failed. Please try again.')); } finally { setLoading(false); }
   }
 
   return (

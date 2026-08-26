@@ -282,6 +282,34 @@ const rideController = {
       const match = await findMatchingRide(request);
       res.json({ success: true, request: requestPayload, match });
     } catch (error) {
+      console.error('Error finding ride:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  async cancelRide(req, res) {
+    try {
+      const { requestId, userId } = req.body;
+      if (!requestId || !userId) {
+        return res.status(400).json({ success: false, message: 'requestId and userId are required' });
+      }
+
+      const dbReady = getDbReady();
+      const memoryStore = getMemoryStore();
+      if (dbReady) {
+        const request = await RideRequest.findOne({ where: { id: requestId, user_id: userId } });
+        if (!request) return res.status(404).json({ success: false, message: 'Ride request not found' });
+        await request.update({ status: 'cancelled' });
+      } else {
+        const request = memoryStore.rideRequests.find((entry) => entry.id === Number(requestId) && entry.user_id === Number(userId));
+        if (!request) return res.status(404).json({ success: false, message: 'Ride request not found' });
+        request.status = 'cancelled';
+        request.updatedAt = new Date();
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error cancelling ride:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   },
@@ -338,6 +366,7 @@ const rideController = {
 
       res.json({ success: true, location: { latitude: numericLatitude, longitude: numericLongitude } });
     } catch (error) {
+      console.error('Error updating location:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   },

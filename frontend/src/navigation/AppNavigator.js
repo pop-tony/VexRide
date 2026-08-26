@@ -15,6 +15,7 @@ import { getStoredUser } from '../services/user';
 import { getJson } from '../services/api';
 import { joinUser, onSocket, onSocketConnect, socket } from '../services/socket';
 import { incrementUnread, setUnreadCount } from '../services/chatBadge';
+import { logError } from '../services/errorHandling';
 
 const Stack = createStackNavigator();
 
@@ -42,7 +43,7 @@ export default function AppNavigator() {
         const result = await getJson(`/messages/unread/${user.id}`);
         if (active) setUnreadCount(result.unreadCount);
       } catch (error) {
-        console.warn('Unable to load unread messages:', error.message);
+        logError('Load unread messages', error);
       }
       const registerUser = () => joinUser(user.id);
       cleanConnection = onSocketConnect(registerUser);

@@ -5,6 +5,7 @@ import ScreenLayout from '../components/ScreenLayout';
 import { getStoredUser } from '../services/user';
 import { joinChatRoom, markMessageSeen, onSocket, onSocketConnect, sendChatMessage, sendTypingStart, sendTypingStop, socket } from '../services/socket';
 import { resetUnread } from '../services/chatBadge';
+import { logError } from '../services/errorHandling';
 
 const heroImage = require('../../assets/images/vex_map_bg_1784946439656.jpg');
 
@@ -79,7 +80,7 @@ export default function ChatScreen({ navigation, route }) {
             patchJson(`/messages/${message.id}/seen`, { userId: currentUser.id }).catch(() => {});
           });
       } catch (error) {
-        console.warn(error);
+        logError('Load chat messages', error);
       }
     })();
 

@@ -4,6 +4,7 @@ import { postJson } from '../services/api';
 import { saveUser } from '../services/user';
 import ScreenLayout from '../components/ScreenLayout';
 import { LockIcon, ZapIcon, ArrowLeftIcon } from '../components/Icons';
+import { friendlyError, logError } from '../services/errorHandling';
 
 const heroImage = require('../../assets/images/vex_auth_bg_1784946380935.jpg');
 
@@ -33,7 +34,8 @@ export default function AuthScreen({ navigation, route }) {
       await saveUser(result.user);
       navigation.replace('Home');
     } catch (error) {
-      setMessage(error.message || 'Authentication failed');
+      logError('Authentication', error);
+      setMessage(friendlyError(error, 'Authentication failed. Please check your details and try again.'));
     } finally {
       setLoading(false);
     }

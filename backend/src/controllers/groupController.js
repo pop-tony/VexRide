@@ -160,6 +160,7 @@ const groupController = {
       broadcast('groupCreated', { group: groupForUser });
       res.json({ success: true, group: groupForUser, membership });
     } catch (error) {
+      console.error('Error creating group:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   },
@@ -173,6 +174,7 @@ const groupController = {
       const groups = await Promise.all(groupsRaw.map((group) => serializeGroup(group, userId)));
       res.json({ success: true, groups });
     } catch (error) {
+      console.error('Error joining group:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   },
@@ -221,6 +223,7 @@ const groupController = {
       broadcast('groupJoined', { groupId, userId, membership, group: groupForUser });
       res.json({ success: true, membership, group: groupForUser, paymentAmount: getGroupShareAmount(group) });
     } catch (error) {
+      console.error('Error browsing groups:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   },
@@ -248,6 +251,7 @@ const groupController = {
       broadcast('groupRideBooked', { groupId, ride: rideDetails });
       res.json({ success: true, ride: rideDetails });
     } catch (error) {
+      console.error('Error booking group ride:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   }

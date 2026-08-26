@@ -4,6 +4,7 @@ import { postJson } from '../services/api';
 import ScreenLayout from '../components/ScreenLayout';
 import { getStoredUser } from '../services/user';
 import { GroupsIcon, PinIcon, FlagIcon, CalendarIcon, ClockIcon, WalletIcon, UsersIcon, ZapIcon, InfoIcon } from '../components/Icons';
+import { friendlyError, logError } from '../services/errorHandling';
 
 const heroImage = require('../../assets/images/vex_groups_bg_1784946398517.jpg');
 
@@ -29,7 +30,7 @@ export default function CreateGroupScreen({ navigation, route }) {
         joinDeadline: joinDeadline.trim(), split_rules: 'Even split', userId: currentUser?.id
       });
       navigation.navigate('BrowseGroups');
-    } catch (error) { setMessage(error.message || 'Could not create group'); }
+    } catch (error) { logError('Create group', error); setMessage(friendlyError(error, 'Could not create the group. Please try again.')); }
   }
 
   const fields = [

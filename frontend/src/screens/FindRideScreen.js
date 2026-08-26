@@ -3,7 +3,9 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'reac
 import { postJson } from '../services/api';
 import ScreenLayout from '../components/ScreenLayout';
 import { getStoredUser } from '../services/user';
+import { clearSearchSession, getSearchSession, saveSearchSession } from '../services/searchSession';
 import { SearchIcon, PinIcon, FlagIcon, ClockIcon, ZapIcon } from '../components/Icons';
+import { friendlyError, logError } from '../services/errorHandling';
 
 const heroImage = require('../../assets/images/vex_map_bg_1784946439656.jpg');
 
@@ -12,18 +14,74 @@ export default function FindRideScreen({ navigation, route }) {
   const [destination, setDestination] = useState('University of Ghana');
   const [time, setTime] = useState('9:30 AM');
   const [loading, setLoading] = useState(false);
+  const [activeSearch, setActiveSearch] = useState(false);
   const [error, setError] = useState('');
   const [APP_USER, setAPP_USER] = useState({});
 
-  useEffect(() => { (async () => { setAPP_USER(await getStoredUser()) })() }, []);
+  useEffect(() => {
+    let active = true;
+
+    async function restoreSearchSession() {
+      const savedSearch = await getSearchSession();
+      if (!active || !savedSearch) return;
+      setOrigin(savedSearch.origin || '');
+      setDestination(savedSearch.destination || '');
+      setTime(savedSearch.time || '');
+      setActiveSearch(savedSearch.active === true);
+    }
+
+    async function loadUser() {
+      const user = await getStoredUser();
+      if (active) setAPP_USER(user || {});
+    }
+
+    restoreSearchSession();
+    loadUser();
+    const unsubscribe = navigation.addListener('focus', restoreSearchSession);
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [navigation]);
 
   async function handleFindRide() {
     try {
       setLoading(true); setError('');
+      const search = {
+        origin: origin.trim(),
+        destination: destination.trim(),
+        time: time.trim(),
+        active: true,
+        startedAt: Date.now()
+      };
+      await saveSearchSession(search);
+      setActiveSearch(true);
       const data = await postJson('/findRide', { origin: origin.trim(), destination: destination.trim(), time: time.trim(), userName: APP_USER.name, userEmail: APP_USER.email });
+      await saveSearchSession({ ...search, requestId: data.request?.id });
+      if (data.match) await clearSearchSession();
       console.log(data)
       navigation.navigate('MatchResult', { origin, destination, time, match: data.match, request: data.request });
-    } catch (err) { setError(err.message || 'Could not find a ride'); } finally { setLoading(false); }
+    } catch (err) { logError('Find ride', err); setError(friendlyError(err, 'Could not find a ride. Please try again.')); } finally { setLoading(false); }
+  }
+
+  async function handleCancelSearch() {
+    let savedSearch = null;
+    try {
+      savedSearch = await getSearchSession();
+    } catch (error) {
+      logError('Read search session', error);
+    }
+    setActiveSearch(false);
+    setError('');
+    await clearSearchSession();
+
+    try {
+      if (savedSearch?.requestId && APP_USER?.id) {
+        await postJson('/cancelRide', { requestId: savedSearch.requestId, userId: APP_USER.id });
+      }
+    } catch (err) {
+      logError('Cancel search', err);
+    }
   }
 
   return (
@@ -97,20 +155,30 @@ export default function FindRideScreen({ navigation, route }) {
             </View>
           ) : null}
 
+          {activeSearch ? (
+            <View className="bg-[#00f2fe]/10 border border-[#00f2fe]/30 p-3 rounded-2xl mb-4 flex-row items-center gap-2">
+              <ActivityIndicator size="small" color="#ff5e36" />
+              <Text className="flex-1 text-[#c9e5f4] font-bold text-xs">
+                Your search is still active. You can switch screens and return here anytime.
+              </Text>
+            </View>
+          ) : null}
+
           {/* Submit Action */}
           <TouchableOpacity
             className={`py-3.5 rounded-2xl items-center shadow-xl flex-row justify-center gap-2 ${
-              loading ? 'bg-[#ff5e36]/50' : 'bg-[#ff5e36] border border-[#ff5e36]/60 active:scale-98'
+              loading || activeSearch ? 'bg-[#ff5e36]/50' : 'bg-[#ff5e36] border border-[#ff5e36]/60 active:scale-98'
             }`}
-            onPress={handleFindRide}
+            onPress={activeSearch ? handleCancelSearch : handleFindRide}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="white" />
             ) : (
               <>
-                <ZapIcon size={18} color="#ffffff" />
-                <Text className="text-white font-black text-sm md:text-base tracking-wide">Search Matches</Text>
+                <Text className="text-white font-black text-sm md:text-base tracking-wide">
+                  {activeSearch ? 'Cancel Search' : 'Search Matches'}
+                </Text>
               </>
             )}
           </TouchableOpacity>
