@@ -5,6 +5,7 @@ import { onSocket } from '../services/socket';
 import ScreenLayout from '../components/ScreenLayout';
 import { getStoredUser } from '../services/user';
 import { GroupsIcon, UsersIcon, CardIcon, CarIcon, ZapIcon, CheckIcon, LockIcon } from '../components/Icons';
+import { friendlyError, logError } from '../services/errorHandling';
 
 const heroImage = require('../../assets/images/vex_groups_bg_1784946398517.jpg');
 
@@ -15,7 +16,7 @@ export default function BrowseGroupsScreen({ navigation, route }) {
 
   async function loadGroups() {
     try { const result = await getJson(`/browseGroups?userId=${currentUser?.id}`); setGroups(result.groups || []); }
-    catch (error) { setActivity(prev => [`Failed to load groups: ${error.message}`, ...prev].slice(0, 4)); }
+    catch (error) { logError('Load groups', error); setActivity(prev => [`Could not load groups. Please try again.`, ...prev].slice(0, 4)); }
   }
 
   useEffect(() => { (async () => setCurrentUser(await getStoredUser()))() }, []);
@@ -31,7 +32,7 @@ export default function BrowseGroupsScreen({ navigation, route }) {
 
   async function handleJoin(groupId) {
     try { const result = await postJson('/joinGroup', { groupId, userId: currentUser?.id }); setGroups(prev => prev.map(g => g.id === groupId ? result.group : g)); setActivity(prev => [`Joined group #${groupId}. Pay GHS${result.paymentAmount} to move out of probation.`, ...prev].slice(0, 4)); }
-    catch (error) { setActivity(prev => [`Join failed: ${error.message}`, ...prev].slice(0, 4)); }
+    catch (error) { logError('Join group', error); setActivity(prev => [`${friendlyError(error, 'Could not join the group. Please try again.')}`, ...prev].slice(0, 4)); }
   }
 
   async function handlePay(group) {
@@ -42,7 +43,7 @@ export default function BrowseGroupsScreen({ navigation, route }) {
 
   async function handleBook(groupId) {
     try { const result = await postJson('/bookGroupRide', { groupId }); setActivity(prev => [`Ride booked for group #${groupId}: ${result.ride.car}`, ...prev].slice(0, 4)); }
-    catch (error) { setActivity(prev => [`Book failed: ${error.message}`, ...prev].slice(0, 4)); }
+    catch (error) { logError('Book group ride', error); setActivity(prev => [`${friendlyError(error, 'Could not book the group ride. Please try again.')}`, ...prev].slice(0, 4)); }
   }
 
   return (

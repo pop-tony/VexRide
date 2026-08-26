@@ -6,6 +6,7 @@ import ScreenLayout from '../components/ScreenLayout';
 import LiveLocationMap from '../components/LiveLocationMap';
 import { CheckIcon, PinIcon, FlagIcon, ClockIcon, HomeIcon, ChatIcon, UsersIcon } from '../components/Icons';
 import ChatUnreadBadge from '../components/ChatUnreadBadge';
+import { friendlyError, logError } from '../services/errorHandling';
 
 const heroImage = require('../../assets/images/vex_home_bg_1784946351687.jpg');
 
@@ -36,7 +37,7 @@ export default function RideDetailsScreen({ navigation, route }) {
           setLiveLocationState(result.liveLocationState);
         }
       } catch (error) {
-        console.warn(error);
+        logError('Load ride location', error);
       }
     }
 
@@ -77,7 +78,8 @@ export default function RideDetailsScreen({ navigation, route }) {
         setCompletionMessage('Your completion confirmation is recorded. Waiting for the other rider.');
       }
     } catch (error) {
-      Alert.alert('Completion confirmation failed', error.message || 'Unable to confirm ride completion.');
+      logError('Confirm ride completion', error);
+      Alert.alert('Unable to confirm', friendlyError(error, 'Ride completion could not be confirmed. Please try again.'));
     } finally {
       setConfirmingCompleted(false);
     }

@@ -6,6 +6,7 @@ import { onSocket } from '../services/socket';
 import ScreenLayout from '../components/ScreenLayout';
 import LiveLocationMap from '../components/LiveLocationMap';
 import { TrackingIcon, CheckIcon, CarIcon, ZapIcon } from '../components/Icons';
+import { friendlyError, logError } from '../services/errorHandling';
 import ChatUnreadBadge from '../components/ChatUnreadBadge';
 
 const heroImage = require('../../assets/images/vex_map_bg_1784946439656.jpg');
@@ -27,14 +28,14 @@ export default function RideTrackingScreen({ navigation, route }) {
 
   async function loadRides(userId) {
     try { const data = await getJson(`/activeRides/${userId}`); setActiveRides(data.rides || []); }
-    catch (e) { console.error(e); } finally { setLoading(false); setRefreshing(false); }
+    catch (e) { logError('Load active rides', e); } finally { setLoading(false); setRefreshing(false); }
   }
 
   async function handleConfirmRide(ride) {
     if (!currentUser) return Alert.alert('Error', 'User not found');
     if ((ride.user1_id === currentUser.id && ride.user1_confirmed) || (ride.user2_id === currentUser.id && ride.user2_confirmed)) return Alert.alert('Already Confirmed', 'You have already confirmed this ride');
     try { await postJson('/confirmMatch', { matchId: ride.id, userId: currentUser.id }); Alert.alert('Success', 'Ride confirmation recorded!'); await loadRides(currentUser.id); }
-    catch (error) { Alert.alert('Error', error.message); }
+    catch (error) { logError('Confirm ride', error); Alert.alert('Unable to confirm', friendlyError(error, 'Ride confirmation failed. Please try again.')); }
   }
 
   async function onRefresh() { setRefreshing(true); if (currentUser) await loadRides(currentUser.id); }
@@ -80,7 +81,7 @@ export default function RideTrackingScreen({ navigation, route }) {
           </View>
         ) : (
           <View className="bg-[#0b172a]/95 rounded-3xl p-5 border border-[#00f2fe]/20 shadow-xl mb-5 flex-row items-center gap-3">
-            <ZapIcon size={20} color="#00f2fe" />
+            {/*<ZapIcon size={20} color="#00f2fe" />*/}
             <View className="flex-1 min-w-0">
               <Text className="text-white font-extrabold text-sm mb-0.5">Live GPS Stream</Text>
               <Text className="text-[#8eb4c6] text-xs leading-4">Waiting for GPS data from matched riders.</Text>

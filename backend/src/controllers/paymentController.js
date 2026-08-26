@@ -249,6 +249,7 @@ const paymentController = {
       const data = await verifyPaystackReference(reference);
       res.json({ success: true, ...data });
     } catch (error) {
+      console.error('Error in verifyPayment:', error.response?.data || error);
       res.status(500).json({ success: false, message: error.message });
     }
   },
@@ -263,7 +264,8 @@ const paymentController = {
       await verifyPaystackReference(reference);
       res.send(`<h1>Payment processed</h1><p>Reference: ${reference}</p><p>Return to the app to continue.</p>`);
     } catch (error) {
-      res.status(500).send(`<h1>Payment callback error</h1><p>${error.message}</p>`);
+      console.error('Error in paystackCallback:', error.response?.data || error);
+      res.status(500).send('<h1>Payment callback error</h1><p>We could not complete this payment. Please return to the app and try again.</p>');
     }
   }
 };

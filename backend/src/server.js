@@ -163,6 +163,7 @@ app.get('/match/:matchId/chat', async (req, res) => {
       }))
     });
   } catch (error) {
+    console.error('Error loading chat messages:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -187,6 +188,7 @@ app.patch('/messages/:messageId/seen', async (req, res) => {
 
     res.json({ success: true, messageId, seen: true });
   } catch (error) {
+    console.error('Error marking message seen:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -202,6 +204,7 @@ app.get('/messages/unread/:userId', async (req, res) => {
 
     res.json({ success: true, unreadCount });
   } catch (error) {
+    console.error('Error loading unread messages:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -220,6 +223,7 @@ app.get('/user/:userId', userController.getUserById);
 
 // Ride routes
 app.post('/findRide', rideController.findRide);
+app.post('/cancelRide', rideController.cancelRide);
 app.post('/location/update', rideController.updateLocation);
 app.get('/match/:matchId/live', rideController.getMatchLiveState);
 
@@ -261,6 +265,7 @@ app.post('/reset-app-data', async (_req, res) => {
 
     res.json({ success: true, message: 'App data cleared' });
   } catch (error) {
+    console.error('Error resetting app data:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
