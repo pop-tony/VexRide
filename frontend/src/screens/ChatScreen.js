@@ -171,7 +171,7 @@ export default function ChatScreen({ navigation, route }) {
     setDraft('');
   }
 
-  const partnerName = matchDetails?.counterParty?.name || matchDetails?.counterParty?.user_name || counterParty?.name || counterParty?.user_name || request?.name || request?.user_name || 'Matched rider';
+  const partnerName = matchDetails?.counterParty?.name || matchDetails?.counterParty?.user_name || counterParty?.name || counterParty?.user_name || request?.name || request?.user_name || counterParty || 'Matched rider';
 
   return (
     <ScreenLayout navigation={navigation} route={route} bgImage={heroImage} hideBottomNav>

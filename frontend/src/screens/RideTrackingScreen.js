@@ -31,6 +31,16 @@ export default function RideTrackingScreen({ navigation, route }) {
     catch (e) { logError('Load active rides', e); } finally { setLoading(false); setRefreshing(false); }
   }
 
+  function goToChat(id, ride){
+    let counterParty = '';
+    if(ride.user1_id === currentUser.id){
+      counterParty = ride.user2_name;
+    }else{
+      counterParty = ride.user1_name;
+    }
+    navigation.navigate('Chat', { matchId: id, ride, counterParty })
+  }
+
   async function handleConfirmRide(ride) {
     if (!currentUser) return Alert.alert('Error', 'User not found');
     if ((ride.user1_id === currentUser.id && ride.user1_confirmed) || (ride.user2_id === currentUser.id && ride.user2_confirmed)) return Alert.alert('Already Confirmed', 'You have already confirmed this ride');
@@ -143,7 +153,7 @@ export default function RideTrackingScreen({ navigation, route }) {
 
                   <TouchableOpacity
                     className="flex-1 bg-white/[0.05] border border-white/[0.10] py-3 rounded-2xl items-center"
-                    onPress={() => navigation.navigate('Chat', { matchId: ride.id, ride })}
+                    onPress={() => goToChat(ride.id, ride)}
                   >
                     <Text className="text-white font-black text-xs uppercase tracking-wider">Open Chat</Text>
                     <ChatUnreadBadge />

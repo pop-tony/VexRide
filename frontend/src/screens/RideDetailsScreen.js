@@ -85,6 +85,16 @@ export default function RideDetailsScreen({ navigation, route }) {
     }
   }
 
+  function goToChat(matchId, ride, liveLocationState){
+    let counterParty = '';
+    if(ride.user1_id === currentUser.id){
+      counterParty = ride.user2_name;
+    }else{
+      counterParty = ride.user1_name;
+    }
+    navigation.navigate('Chat', { matchId, ride, liveLocationState, counterParty })
+  }
+
   return (
     <ScreenLayout navigation={navigation} route={route} bgImage={heroImage}>
       <View className="w-full max-w-md self-center py-2">
@@ -172,7 +182,7 @@ export default function RideDetailsScreen({ navigation, route }) {
         {matchId ? (
           <TouchableOpacity
             className="bg-[#00f2fe]/10 border border-[#00f2fe]/40 p-4 rounded-2xl items-center shadow-xl active:bg-[#00f2fe]/20 flex-row justify-center gap-2 mb-3"
-            onPress={() => navigation.navigate('Chat', { matchId, ride, liveLocationState })}
+            onPress={() => goToChat(matchId, ride, liveLocationState)}
           >
             <ChatIcon size={18} color="#00f2fe" />
             <Text className="text-[#00f2fe] font-black text-base tracking-wide">Open Chat</Text>
